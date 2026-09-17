@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>分类详情 · 智能剧本创作平台原型</title>
+<link rel="stylesheet" href="css/app.css?v=7">
+<style>
+/* ---------- 分类详情页专属样式 ---------- */
+.cdesc { margin: 12px 16px 0; background: var(--fill); border-radius: 10px; padding: 10px 12px; font-size: 12px; color: var(--text-2); line-height: 1.6; }
+.cdesc b { color: var(--text-1); }
+.clist { padding: 12px 16px 16px; }
+.clist .brow { cursor: pointer; }
+.frow { margin-bottom: 14px; }
+.frow h4 { font-size: 12px; color: var(--text-3); font-weight: 400; margin-bottom: 8px; }
+.frow .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.empty { font-size: 12px; color: var(--text-3); text-align: center; padding: 48px 0; }
+</style>
+</head>
+<body data-tab="category">
+<div class="app">
+
+  <header class="appbar">
+    <button class="icon-btn" onclick="go('category')" title="返回分类"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button>
+    <h1 id="ttl">分类详情</h1>
+    <button class="sq-btn" id="fbtn" onclick="openSheet()">筛选</button>
+  </header>
+
+  <main class="page-body">
+    <p class="cdesc" id="cdesc"></p>
+    <div class="clist" id="clist"></div>
+  </main>
+
+  <!-- 筛选弹层：与书城主页同款按钮收纳 -->
+  <div class="sheet-mask" id="fMask" onclick="closeSheet()"></div>
+  <div class="sheet" id="fSheet">
+    <h3>筛选与排序</h3>
+    <div id="fBody"></div>
+    <button class="btn-solid" style="width:100%" onclick="closeSheet()">完成</button>
+  </div>
+
+</div>
+<script src="js/app.js?v=17"></script>
+<script>
+/* ---------- URL 参数 ---------- */
+var Q = (function () {
+  var q = {};
+  location.search.replace(/[?&]([^=&]+)=([^&]*)/g, function (m, k, v) { q[k] = decodeURIComponent(v); return m; });
+  return q;
+})();
+var CH = Q.ch === 'comic' ? 'comic' : 'script';
+var G = Q.g || '热门';
+var V = Q.v || (CH === 'comic' ? '全部漫剧' : '全部作品');
+
+/* ---------- 演示数据（与书城 / 漫剧频道一致） ---------- */
+var BOOKS = [
+  { t: '长风渡我', a: '青山客', sub: '都市', dur: '3-5分钟/集', eps: 3, cost: '1万-5万', st: '已上架', w: '12.6万字', sc: '9.2', ts: '2026-08-12', reads: 12.4, tags: ['悬疑', '反转', '群像'], s: '夜航船上的摆渡人，载着一桩十年前的失踪悬案。' },
+  { t: '春日宴迟', a: '白鹭洲', sub: '言情', dur: '3-5分钟/集', eps: 5, cost: '5万-10万', st: '已上架', w: '33.0万字', sc: '8.8', ts: '2026-06-30', reads: 9.8, tags: ['大女主', '甜宠', '复仇'], s: '被退婚的侯府千金，靠一纸婚约重整家门。' },
+  { t: '夜航船记', a: '半盏灯', sub: '悬疑', dur: '1-3分钟/集', eps: 2, cost: '1万-5万', st: '审核中', w: '21.4万字', sc: '9.0', ts: '2026-09-01', reads: 8.3, tags: ['悬疑', '群像', '反转'], s: '夜航船上八位旅客，各怀一段不可告人的往事。' },
+  { t: '山海拾遗', a: '关山月', sub: '玄幻', dur: '1-3分钟/集', eps: 12, cost: '1万以下', st: '已上架', w: '9.8万字', sc: '8.5', ts: '2026-07-15', reads: 6.5, tags: ['志异', '治愈'], s: '最后一个灵兽观察者写下的山海志异。' },
+  { t: '锦绣成灰', a: '陌生', sub: '古装', dur: '5-10分钟/集', eps: 4, cost: '5万-10万', st: '已上架', w: '45.2万字', sc: '9.4', ts: '2026-05-20', reads: 15.2, tags: ['权谋', '大女主', '虐恋'], s: '绣娘入宫局，以针线搅动朝堂风云。' },
+  { t: '星夜兼程', a: '林中和', sub: '都市', dur: '1-3分钟/集', eps: 4, cost: '1万以下', st: '已上架', w: '7.6万字', sc: '8.6', ts: '2026-08-25', reads: 4.2, tags: ['治愈', '群像'], s: '深夜电台主播与城市失眠者互相治愈。' },
+  { t: '风雪夜归人', a: '苏白', sub: '古装', dur: '3-5分钟/集', eps: 3, cost: '1万-5万', st: '已存证', w: '18.3万字', sc: '8.9', ts: '2026-04-11', reads: 7.7, tags: ['虐恋', '复仇'], s: '雪夜刀客回边关，只为一句十年之约。' },
+  { t: '无间之名', a: '沉野', sub: '悬疑', dur: '1-3分钟/集', eps: 1, cost: '免费', st: '审核中', w: '11.1万字', sc: '9.1', ts: '2026-09-05', reads: 5.9, tags: ['悬疑', '反转', '复仇'], s: '一封匿名信，牵出被掩埋的冤案真相。' },
+  { t: '银河修理员', a: '陆离', sub: '科幻', dur: '3-5分钟/集', eps: 6, cost: '5万-10万', st: '已上架', w: '26.4万字', sc: '9.0', ts: '2026-08-30', reads: 10.6, tags: ['科幻', '治愈', '群像'], s: '退休飞船修理员与漂流在银河废墟里的 AI 少女。' },
+  { t: '楼下请回答', a: '阿盏', sub: '喜剧', dur: '1-3分钟/集', eps: 8, cost: '1万以下', st: '已上架', w: '6.2万字', sc: '8.7', ts: '2026-09-03', reads: 9.1, tags: ['喜剧', '群像', '治愈'], s: '一通深夜电台连线，串起整栋居民楼的荒诞日常。' },
+  { t: '巷尾早餐铺', a: '温言', sub: '现实', dur: '3-5分钟/集', eps: 4, cost: '1万-5万', st: '已上架', w: '15.6万字', sc: '9.3', ts: '2026-07-08', reads: 11.8, tags: ['治愈', '群像', '大女主'], s: '开了二十年的早餐铺，见证老街三代人的来与往。' },
+  { t: '凤栖台', a: '谢琳琅', sub: '古装', dur: '5-10分钟/集', eps: 6, cost: '5万-10万', st: '审核中', w: '38.5万字', sc: '8.9', ts: '2026-09-06', reads: 7.2, tags: ['权谋', '复仇', '大女主'], s: '落难公主化名入宫，一步步收回地图上的旧山河。' },
+  { t: '雾港迷案', a: '沈孤舟', sub: '悬疑', dur: '5-10分钟/集', eps: 5, cost: '1万-5万', st: '已上架', w: '29.7万字', sc: '9.1', ts: '2026-06-18', reads: 13.6, tags: ['悬疑', '反转', '复仇'], s: '雾港小镇三桩旧案，最终指向同一艘失踪的船。' },
+  { t: '心动信号塔', a: '苏浅浅', sub: '言情', dur: '1-3分钟/集', eps: 10, cost: '免费', st: '已上架', w: '8.9万字', sc: '8.4', ts: '2026-08-05', reads: 8.8, tags: ['甜宠', '治愈', '大女主'], s: '信号塔修理员与气象观测员，在电波里交换心动。' },
+  { t: '山神娶亲', a: '白泽君', sub: '玄幻', dur: '3-5分钟/集', eps: 7, cost: '1万-5万', st: '已存证', w: '22.1万字', sc: '8.8', ts: '2026-05-28', reads: 6.9, tags: ['志异', '反转', '虐恋'], s: '山神六十年一娶亲，今年娶到的新娘带着斩妖刀。' },
+  { t: '重启2009', a: '老周不老', sub: '都市', dur: '3-5分钟/集', eps: 9, cost: '1万-5万', st: '已上架', w: '31.3万字', sc: '8.6', ts: '2026-09-08', reads: 10.2, tags: ['反转', '复仇', '群像'], s: '破产夜中年男人睁眼回到 2009，记忆全在。' }
+];
+var COMICS = [
+  { t: '长风渡我', m: '都市 · 3-5分钟/集 · 播放 12.4万', like: '8,600' },
+  { t: '星夜兼程', m: '都市 · 1-3分钟/集 · 播放 4.2万', like: '3,300' },
+  { t: '春日宴迟', m: '言情 · 3-5分钟/集 · 播放 9.8万', like: '7,200' },
+  { t: '山海拾遗', m: '玄幻 · 1-3分钟/集 · 播放 6.5万', like: '5,100' },
+  { t: '夜航船记', m: '悬疑 · 1-3分钟/集 · 播放 8.3万', like: '6,400' }
+];
+
+/* ---------- 筛选与排序 ---------- */
+var F = { dur: '全部', cost: '全部', st: '全部', sort: '综合排序' };
+var DURS = ['全部', '1-3分钟/集', '3-5分钟/集', '5-10分钟/集'];
+var COSTS = ['全部', '免费', '1万以下', '1万-5万', '5万-10万'];
+var STS = ['全部', '已上架', '审核中', '已存证'];
+var SORTS = ['综合排序', '最高评分', '最多集数'];
+function baseList() {
+  if (CH === 'comic') return G === '题材' ? COMICS.filter(function (c) { return c.m.indexOf(V) === 0; }) : COMICS.slice();
+  if (G === '题材') return BOOKS.filter(function (b) { return b.sub === V; });
+  if (G === '情节') return BOOKS.filter(function (b) { return (b.tags || []).indexOf(V) > -1; });
+  if (G === '状态') return BOOKS.filter(function (b) { return b.st === V; });
+  if (V === '高分作品') return BOOKS.filter(function (b) { return parseFloat(b.sc) >= 9.0; });
+  if (V === '新作上架') return BOOKS.filter(function (b) { return b.ts >= '2026-08-12'; });
+  if (V === '热门试读') return BOOKS.filter(function (b) { return b.reads >= 8; });
+  return BOOKS.slice();
+}
+function applyF() {
+  var list = baseList().filter(function (b) {
+    return (F.dur === '全部' || b.dur === F.dur) &&
+           (F.cost === '全部' || b.cost === F.cost) &&
+           (F.st === '全部' || b.st === F.st);
+  });
+  if (F.sort === '最高评分') list.sort(function (x, y) { return parseFloat(y.sc) - parseFloat(x.sc); });
+  if (F.sort === '最多集数') list.sort(function (x, y) { return y.eps - x.eps; });
+  return list;
+}
+
+/* ---------- 渲染 ---------- */
+function rowHTML(b) {
+  return '<div class="brow" onclick="location.href=\'book_detail.html?t=' + encodeURIComponent(b.t) + '\'">' +
+    '<div class="cv"><img src="' + cvSrc(b.t) + '" alt=""><span class="score">' + b.sc + '分</span></div>' +
+    '<div class="bd"><h4>' + b.t + '</h4><p class="au">作者：' + b.a + '｜' + b.s + '</p>' +
+    '<div class="meta"><span>' + b.st + '</span><span>' + b.sub + '</span><span>' + b.w + '</span><span>可看 ' + b.eps + ' 集</span></div></div></div>';
+}
+function comicRow(c) {
+  return '<div class="brow" onclick="go(\'comic\')">' +
+    '<div class="cv"><span class="vt">' + c.t + '</span></div>' +
+    '<div class="bd"><h4>' + c.t + '</h4><p class="au">' + c.m + '</p>' +
+    '<div class="meta"><span>漫剧</span><span>点赞 ' + c.like + '</span></div></div></div>';
+}
+function renderList() {
+  var el = document.getElementById('clist');
+  if (CH === 'comic') {
+    var cs = baseList();
+    el.innerHTML = cs.length ? cs.map(comicRow).join('') : '<p class="empty">该分类下暂无漫剧</p>';
+    return;
+  }
+  var list = applyF();
+  el.innerHTML = list.length ? list.map(rowHTML).join('') : '<p class="empty">该分类与筛选条件下暂无作品，试试调整筛选</p>';
+}
+function descText() {
+  if (G === '题材') return '<b>' + V + '：</b>' + (CH === 'comic' ? '漫剧剧场' : '书城') + '中' + V + '题材的全部作品';
+  if (G === '情节') return '<b>' + V + '：</b>带有「' + V + '」情节标签的剧本作品';
+  if (G === '状态') return '<b>' + V + '：</b>审核状态为「' + V + '」的剧本作品';
+  return '<b>' + V + '：</b>' + ({
+    '全部作品': '平台书城收录的全部剧本试看作品',
+    '高分作品': '读者评分 9.0 及以上的精选剧本',
+    '新作上架': '近 30 天内新上架的剧本试看作品',
+    '热门试读': '累计试读量 8 万以上的热门试看作品',
+    '全部漫剧': '漫剧剧场收录的全部漫剧作品'
+  }[V] || V);
+}
+
+/* ---------- 筛选弹层 ---------- */
+function frowHTML(title, key, opts) {
+  return '<div class="frow"><h4>' + title + '</h4><div class="chips">' + opts.map(function (v) {
+    return '<button class="chip' + (F[key] === v ? ' on' : '') + '" onclick="setF(\'' + key + '\',\'' + v + '\')">' + v + '</button>';
+  }).join('') + '</div></div>';
+}
+function renderFBody() {
+  document.getElementById('fBody').innerHTML =
+    frowHTML('单集时长', 'dur', DURS) +
+    frowHTML('预期成本', 'cost', COSTS) +
+    frowHTML('审核状态', 'st', STS) +
+    frowHTML('排序方式', 'sort', SORTS);
+}
+function setF(key, val) {
+  F[key] = val;
+  renderFBody();
+  renderList();
+}
+function openSheet() {
+  renderFBody();
+  document.getElementById('fMask').classList.add('show');
+  document.getElementById('fSheet').classList.add('show');
+}
+function closeSheet() {
+  document.getElementById('fMask').classList.remove('show');
+  document.getElementById('fSheet').classList.remove('show');
+}
+
+/* ---------- 初始化 ---------- */
+document.getElementById('ttl').textContent = V;
+document.getElementById('cdesc').innerHTML = descText();
+if (CH === 'comic') document.getElementById('fbtn').style.display = 'none';
+renderList();
+</script>
+</body>
+</html>

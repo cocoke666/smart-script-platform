@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI 写作 · 智能剧本创作平台原型</title>
+<link rel="stylesheet" href="css/app.css?v=7">
+<style>
+/* ---------- AI 写作页专属样式 ---------- */
+.cardbox { margin: 12px 16px; border: none; border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow-card); padding: 14px; }
+.cardbox h3 { font-size: 14px; color: var(--text-1); margin-bottom: 10px; }
+.fld { margin-bottom: 10px; }
+.fld label { display: block; font-size: 12px; color: var(--text-2); margin-bottom: 4px; }
+.fld input, .fld textarea, .fld select { width: 100%; border: 1px solid var(--divider); border-radius: 8px; padding: 8px 10px; font-size: 13px; background: var(--card); color: var(--text-1); font-family: inherit; outline: none; }
+.fld input:focus, .fld textarea:focus, .fld select:focus { border-color: var(--primary); }
+.fld-row { display: flex; gap: 10px; }
+.fld-row .fld { flex: 1; }
+.tip { font-size: 11px; color: var(--text-3); line-height: 1.6; }
+/* 参考文档行 */
+.docrow { display: flex; align-items: center; gap: 10px; }
+.docrow button.pick { flex: none; height: 34px; padding: 0 12px; border: none; border-radius: 8px; background: var(--primary-tint); color: var(--primary); font-size: 12px; cursor: pointer; }
+.docrow .chipdoc { flex: 1; min-width: 0; font-size: 12px; color: var(--text-2); background: var(--fill); border-radius: 8px; padding: 8px 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.docrow .chipdoc.on { color: var(--primary); background: var(--primary-tint); }
+.docrow button.clr { flex: none; border: none; background: none; color: var(--text-3); font-size: 14px; cursor: pointer; }
+/* 结果区 */
+.resmeta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.resmeta span { font-size: 11px; color: var(--text-2); background: var(--fill); border-radius: 6px; padding: 3px 8px; }
+.resmeta span.hl { color: var(--primary); background: var(--primary-tint); }
+.ops4 { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.ops4 button { flex: 1; min-width: 40%; height: 34px; border: none; border-radius: 8px; background: var(--primary-tint); color: var(--primary); font-size: 12px; font-weight: 500; cursor: pointer; }
+.ops4 button.ghost { background: var(--fill); color: var(--text-2); }
+#editWrap textarea { width: 100%; min-height: 220px; border: 1px solid var(--divider); border-radius: 8px; padding: 10px; font-size: 12px; line-height: 1.8; background: var(--card); color: var(--text-1); font-family: inherit; outline: none; }
+#editWrap textarea:focus { border-color: var(--primary); }
+/* 文档选择弹层 */
+.docli { padding: 12px 0; border-bottom: 1px solid var(--divider); font-size: 13px; color: var(--text-1); display: flex; justify-content: space-between; cursor: pointer; }
+.docli:last-child { border-bottom: none; }
+.docli span:last-child { color: var(--text-3); font-size: 11px; }
+/* 剧本预览浮层 */
+.pv-mask { position: absolute; inset: 0; background: rgba(31, 35, 41, .45); opacity: 0; pointer-events: none; transition: .25s; z-index: 45; }
+.pv-mask.show { opacity: 1; pointer-events: auto; }
+.pv-box { position: absolute; inset: 24px 12px; background: var(--card); border-radius: 14px; box-shadow: var(--shadow-pop); z-index: 46; display: flex; flex-direction: column; transform: translateY(12px); opacity: 0; pointer-events: none; transition: .25s; }
+.pv-box.show { transform: none; opacity: 1; pointer-events: auto; }
+.pv-box header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--divider); flex: none; }
+.pv-box header b { font-size: 14px; color: var(--text-1); }
+.pv-box header button { border: none; background: none; font-size: 16px; color: var(--text-3); cursor: pointer; }
+.pv-body { flex: 1; overflow-y: auto; padding: 12px 14px; font-size: 12px; color: var(--text-2); line-height: 1.9; white-space: pre-wrap; }
+.qtip { font-size: 11px; color: var(--text-3); text-align: center; margin-top: 6px; }
+</style>
+</head>
+<body data-tab="create">
+<div class="app">
+
+  <header class="appbar">
+    <button class="icon-btn" onclick="openDrawer(true)" title="工具与设置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <h1>AI 写作</h1>
+    <span style="width:28px;flex:none"></span>
+  </header>
+
+  <main class="page-body">
+    <!-- 写作参数 -->
+    <section class="cardbox">
+      <h3>写作参数</h3>
+      <div class="fld"><label>作品 / 场次名</label><input id="wTitle" placeholder="如：渡魂人 · 第三集"></div>
+      <div class="fld-row">
+        <div class="fld"><label>写作类型</label><select id="wType">
+          <option>完整剧本</option><option>接续对话</option><option>场景描写</option><option>内心独白</option>
+        </select></div>
+        <div class="fld"><label>叙事视角</label><select id="wPov">
+          <option>第三人称</option><option>第一人称</option><option>全知视角</option>
+        </select></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>语言风格</label><select id="wStyle">
+          <option>镜头感</option><option>口语化</option><option>文学化</option>
+        </select></div>
+        <div class="fld"><label>节奏</label><select id="wPace">
+          <option>紧凑</option><option>舒缓</option><option>抒情</option>
+        </select></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>场次数量</label><select id="wScenes">
+          <option>3 场</option><option>5 场</option><option>8 场</option>
+        </select></div>
+        <div class="fld"><label>目标字数</label><select id="wLen">
+          <option>约 1000 字</option><option>约 2000 字</option><option>约 500 字</option>
+        </select></div>
+      </div>
+      <div class="fld"><label>人物设定（选填）</label><textarea id="wChars" rows="2" placeholder="如：长风（摆渡人，沉默寡言）、少女（偷渡者，携旧铜钱）"></textarea></div>
+      <div class="fld"><label>大纲或场景描述</label><textarea id="wPrompt" rows="3" placeholder="如：雾夜航船，摆渡人发现偷渡的少女，她不在亡魂名册上…"></textarea></div>
+      <button class="btn-solid" style="width:100%" onclick="genWrite()">AI 生成剧本</button>
+      <p class="qtip" id="qTip"></p>
+    </section>
+
+    <!-- 参考文档 -->
+    <section class="cardbox">
+      <h3>参考文档（选填）</h3>
+      <div class="docrow">
+        <button class="pick" onclick="openDocs(true)">上传参考文档</button>
+        <span class="chipdoc" id="docChip">未上传</span>
+        <button class="clr" onclick="clearDoc()" title="移除文档">×</button>
+      </div>
+      <p class="tip" style="margin-top:8px">上传小说原稿、章节大纲或人物设定后，AI 将依据文档内容生成完整剧本。</p>
+    </section>
+
+    <!-- 生成结果 -->
+    <section class="cardbox" id="resCard" style="display:none">
+      <h3 id="resTitle"></h3>
+      <div class="resmeta" id="resMeta"></div>
+      <div class="ops4" id="resOps">
+        <button onclick="pvOpen()">预览剧本</button>
+        <button onclick="dlScript()">下载剧本</button>
+        <button class="ghost" onclick="editToggle(true)">人工修改</button>
+        <button class="ghost" onclick="aiRevise()">AI 再改一版</button>
+      </div>
+      <div class="fld"><label>修改意见（选填，供下次 AI 修改参考）</label><textarea id="wFix" rows="2" placeholder="如：第二场冲突不够、台词再口语一点…"></textarea></div>
+      <div id="editWrap" style="display:none">
+        <textarea id="wEdit"></textarea>
+        <div class="ops4" style="margin-top:8px">
+          <button onclick="saveEdit()">保存人工修改</button>
+          <button class="ghost" onclick="editToggle(false)">取消</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 文档选择弹层 -->
+  <div class="sheet-mask" id="docMask" onclick="openDocs(false)"></div>
+  <div class="sheet" id="docSheet">
+    <h3>选择参考文档（模拟上传）</h3>
+    <div id="docList"></div>
+  </div>
+
+  <!-- 剧本预览浮层 -->
+  <div class="pv-mask" id="pvMask" onclick="pvClose()"></div>
+  <div class="pv-box" id="pvBox">
+    <header><b id="pvTitle">剧本预览</b><button onclick="pvClose()">✕</button></header>
+    <div class="pv-body" id="pvText"></div>
+  </div>
+
+</div>
+<script src="js/app.js?v=17"></script>
+<script>
+/* ---------- 参考文档（模拟上传） ---------- */
+var DOCLIST = [
+  { n: '《渡魂人》小说原稿.txt', s: '86 KB' },
+  { n: '《渡魂人》章节大纲.docx', s: '24 KB' },
+  { n: '人物设定表.md', s: '12 KB' }
+];
+var docName = '';
+function openDocs(open) {
+  document.getElementById('docMask').classList.toggle('show', open);
+  document.getElementById('docSheet').classList.toggle('show', open);
+}
+function pickDoc(i) {
+  docName = DOCLIST[i].n;
+  var chip = document.getElementById('docChip');
+  chip.textContent = docName + '（' + DOCLIST[i].s + '）';
+  chip.classList.add('on');
+  openDocs(false);
+  toast('参考文档已上传');
+}
+function clearDoc() {
+  docName = '';
+  var chip = document.getElementById('docChip');
+  chip.textContent = '未上传';
+  chip.classList.remove('on');
+}
+(function () {
+  document.getElementById('docList').innerHTML = DOCLIST.map(function (d, i) {
+    return '<div class="docli" onclick="pickDoc(' + i + ')"><span>' + d.n + '</span><span>' + d.s + '</span></div>';
+  }).join('');
+})();
+
+/* ---------- 剧本生成素材池 ---------- */
+var SCENES = ['雾夜 · 渡船', '日 · 码头茶棚', '夜 · 名册阁', '晨 · 江面', '夜 · 灯坊', '昏 · 渡口', '夜 · 名册阁地库', '晨 · 岸上'];
+var DESCS = ['雾从船头漫上来，灯笼的光被压成一团淡黄。', '桨声破开水面，涟漪一圈圈荡开，又久久不散。', '名册阁的铜灯忽明忽暗，照见无页之名。', '她把一枚旧铜钱按在船板上，钱面刻着渡字。', '风掀起灯罩一角，船上两道影子忽近忽远。', '岸线在雾里退去，身后只剩一点灯火。'];
+var DIAL = [
+  ['长风：「你不是册上的魂。」', '少女：「册子上，也不写活人的名字。」'],
+  ['长风：「那你上我的船做什么。」', '少女：「捞人。」'],
+  ['长风：「江面今天不平静。」', '少女：「不平静的是人心。」'],
+  ['长风：「钱上了船，因果就定了。」', '少女：「那我这段因果，有点重。」']
+];
+var script = { title: '', text: '', round: 0, manual: 0, meta: null };
+
+/* ---------- 生成完整剧本 ---------- */
+function buildScript(p, round) {
+  var L = [];
+  L.push('《' + p.title + '》　' + p.type);
+  L.push('叙事视角：' + p.pov + '　语言风格：' + p.style + '　节奏：' + p.pace + '　目标字数：' + p.len);
+  if (p.chars) L.push('人物：' + p.chars);
+  if (p.doc) L.push('参考文档：' + p.doc + '（依据文档内容生成）');
+  if (round > 0) L.push('修改轮次：第 ' + round + ' 轮' + (p.fix ? '　修改意见：' + p.fix : ''));
+  if (p.manual > 0) L.push('人工修改：' + p.manual + ' 次');
+  L.push('【依据大纲】' + p.idea);
+  L.push('');
+  var descCount = p.pace === '紧凑' ? 1 : (p.pace === '舒缓' ? 2 : 3);
+  var tail = p.style === '文学化' ? '余韵悠长，久久不散。' : (p.style === '镜头感' ? '（镜头推近）' : '');
+  var i, s;
+  if (p.type === '完整剧本') {
+    for (i = 0; i < p.scenes; i++) {
+      L.push('第 ' + (i + 1) + ' 场　' + SCENES[(i + round) % SCENES.length] + '　' + (i % 2 ? '日' : '夜'));
+      for (s = 0; s < descCount; s++) {
+        L.push((p.pov === '第一人称' ? '我看见：' : '') + DESCS[(i * descCount + s + round) % DESCS.length] + tail);
+      }
+      var d = DIAL[(i + round) % DIAL.length];
+      L.push(d[0]);
+      L.push(d[1]);
+      L.push('');
+    }
+    L.push('—— 全剧终（原型演示文本，正式版接入 AI 写作引擎） ——');
+  } else {
+    var body = {
+      '接续对话': DIAL[round % DIAL.length].concat(DIAL[(round + 1) % DIAL.length]),
+      '场景描写': [DESCS[round % DESCS.length] + tail, DESCS[(round + 1) % DESCS.length] + tail],
+      '内心独白': [(p.pov === '第一人称' ? '我' : '长风') + '摆渡三十年，只渡亡魂。', '直到她上船的那晚才明白——原来活人，有时比死人更沉。']
+    }[p.type];
+    L.push('【' + p.type + '】');
+    body.forEach(function (x) { L.push(x); });
+    L.push('');
+    L.push('—— 本段完（原型演示文本，正式版接入 AI 写作引擎） ——');
+  }
+  return L.join('\n');
+}
+function collectParams(fix) {
+  return {
+    title: document.getElementById('wTitle').value.trim() || '未命名',
+    type: document.getElementById('wType').value,
+    pov: document.getElementById('wPov').value,
+    style: document.getElementById('wStyle').value,
+    pace: document.getElementById('wPace').value,
+    scenes: parseInt(document.getElementById('wScenes').value, 10) || 3,
+    len: document.getElementById('wLen').value,
+    chars: document.getElementById('wChars').value.trim(),
+    idea: document.getElementById('wPrompt').value.trim(),
+    doc: docName,
+    fix: fix || '',
+    manual: script.manual
+  };
+}
+function genWrite() {
+  var idea = document.getElementById('wPrompt').value.trim();
+  if (!idea) { toast('请先填写大纲或场景描述'); return; }
+  if (!useQuota('write')) { toast('AI 写作次数已用完，请到福利 - 积分商店兑换'); renderQ(); return; }
+  renderQ();
+  var p = collectParams('');
+  script.title = p.title;
+  script.round = 0;
+  script.manual = 0;
+  p.manual = 0;
+  script.meta = p;
+  script.text = buildScript(p, 0);
+  renderResult();
+  toast(docName ? '已依据文档生成完整剧本' : '完整剧本已生成');
+}
+function aiRevise() {
+  if (!script.text) return;
+  if (!useQuota('write')) { toast('AI 写作次数已用完，请到福利 - 积分商店兑换'); renderQ(); return; }
+  renderQ();
+  script.round++;
+  var p = collectParams(document.getElementById('wFix').value.trim());
+  p.manual = script.manual;
+  script.meta = p;
+  script.text = buildScript(p, script.round);
+  renderResult();
+  toast('AI 修改完成：第 ' + script.round + ' 轮');
+}
+
+/* ---------- 结果区渲染 / 人工修改 ---------- */
+function renderResult() {
+  var p = script.meta;
+  document.getElementById('resCard').style.display = 'block';
+  document.getElementById('resTitle').textContent = '《' + script.title + '》剧本 · AI 第 ' + script.round + ' 轮' + (script.manual ? ' · 人工 ' + script.manual + ' 次' : '');
+  var chips = [p.type, p.pov + ' · ' + p.style + ' · ' + p.pace, p.scenes + ' 场 · ' + p.len];
+  if (p.doc) chips.push('文档：' + p.doc);
+  document.getElementById('resMeta').innerHTML = chips.map(function (x, i) {
+    return '<span' + (i === 0 ? ' class="hl"' : '') + '>' + x + '</span>';
+  }).join('');
+  editToggle(false);
+}
+function editToggle(on) {
+  var wrap = document.getElementById('editWrap');
+  var ops = document.getElementById('resOps');
+  if (on) {
+    document.getElementById('wEdit').value = script.text;
+    wrap.style.display = 'block';
+    ops.style.display = 'none';
+  } else {
+    wrap.style.display = 'none';
+    ops.style.display = 'flex';
+  }
+}
+function saveEdit() {
+  script.text = document.getElementById('wEdit').value;
+  script.manual++;
+  renderResult();
+  toast('人工修改已保存（第 ' + script.manual + ' 次）');
+}
+
+/* ---------- 预览与下载 ---------- */
+function pvOpen() {
+  if (!script.text) { toast('请先生成剧本'); return; }
+  document.getElementById('pvTitle').textContent = '《' + script.title + '》预览 · 第 ' + script.round + ' 轮';
+  document.getElementById('pvText').textContent = script.text;
+  document.getElementById('pvMask').classList.add('show');
+  document.getElementById('pvBox').classList.add('show');
+}
+function pvClose() {
+  document.getElementById('pvMask').classList.remove('show');
+  document.getElementById('pvBox').classList.remove('show');
+}
+function dlScript() {
+  if (!script.text) { toast('请先生成剧本'); return; }
+  var blob = new Blob([script.text], { type: 'text/plain;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = script.title + '_剧本_第' + script.round + '轮.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  toast('剧本已下载为 txt');
+}
+
+/* ---------- 剩余次数提示（福利 - 积分商店兑换） ---------- */
+function renderQ() {
+  document.getElementById('qTip').textContent = '剩余 AI 写作次数：' + (getQuota().write || 0) + ' · 生成与 AI 改稿各消耗 1 次，可在福利 - 积分商店兑换';
+}
+renderQ();
+</script>
+</body>
+</html>
