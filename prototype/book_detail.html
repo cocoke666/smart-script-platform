@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>作品详情 · 智能剧本创作平台原型</title>
+<link rel="stylesheet" href="css/app.css?v=7">
+<style>
+/* ---------- 作品详情页专属样式 ---------- */
+.detail-body { flex: 1; overflow-y: auto; padding-bottom: 12px; scrollbar-width: none; -ms-overflow-style: none; }
+.detail-body::-webkit-scrollbar { display: none; }
+.hero { display: flex; gap: 14px; padding: 16px; background: var(--card); }
+.hero .cover { width: 110px; aspect-ratio: 3 / 4; border-radius: 10px; background: linear-gradient(160deg, #EDF1F7, #DCE6F2); display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 16px; font-weight: 600; writing-mode: vertical-rl; letter-spacing: 3px; flex: none; position: relative; overflow: hidden; }
+.hero .meta { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.hero .meta h2 { font-size: 19px; color: var(--text-1); }
+.hero .meta .au { font-size: 12px; color: var(--text-3); }
+.hero .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.hero .meta .price { font-size: 20px; color: var(--primary); font-weight: 700; margin-top: 4px; }
+.section { margin: 12px 16px; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow-card); padding: 14px; }
+.section h3 { font-size: 14px; color: var(--text-1); margin-bottom: 8px; }
+.section p.syn { font-size: 13px; color: var(--text-2); line-height: 1.8; }
+.kv { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.kv .k { font-size: 11px; color: var(--text-3); margin-bottom: 2px; }
+.kv .v { font-size: 13px; color: var(--text-1); font-weight: 500; }
+.tagrow { display: flex; flex-wrap: wrap; gap: 6px; }
+.tagrow span { background: var(--primary-tint); color: var(--primary); border-radius: 12px; padding: 3px 10px; font-size: 12px; }
+.notice { font-size: 11px; color: var(--text-3); line-height: 1.8; }
+/* 选集阅读 */
+.trial-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.trial-head h3 { margin-bottom: 0; }
+.trial-tip { font-size: 11px; color: var(--text-3); }
+.trial-tip b { color: var(--primary); }
+.epgrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.ep { position: relative; height: 36px; border-radius: 8px; border: 1px solid var(--divider); background: var(--card); color: var(--text-2); font-size: 12px; cursor: pointer; }
+.ep.free { border-color: var(--primary); color: var(--primary); background: var(--primary-tint); font-weight: 600; }
+.trial-btn { width: 100%; margin-top: 10px; }
+/* 底部交易操作栏 */
+.actionbar { flex: none; display: flex; gap: 10px; align-items: center; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: var(--card); box-shadow: 0 -1px 0 var(--divider); }
+.actionbar .fav { flex: none; width: 52px; height: 42px; border: 1px solid var(--divider); border-radius: 10px; background: var(--card); color: var(--text-2); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-size: 10px; cursor: pointer; }
+.actionbar .fav svg { width: 19px; height: 19px; }
+.actionbar .fav.on { color: var(--error); border-color: var(--error); }
+.actionbar .fav.on svg { fill: currentColor; }
+/* 询盘 / 购买弹层 */
+.fld { margin-bottom: 10px; }
+.fld label { display: block; font-size: 12px; color: var(--text-2); margin-bottom: 4px; }
+.fld textarea { width: 100%; border: 1px solid var(--divider); border-radius: 8px; padding: 8px 10px; font-size: 13px; background: var(--card); color: var(--text-1); font-family: inherit; outline: none; }
+.fld textarea:focus { border-color: var(--primary); }
+.buy-price { font-size: 24px; color: var(--primary); font-weight: 700; margin: 4px 0 2px; }
+.buy-tip { font-size: 11px; color: var(--text-3); line-height: 1.7; margin-bottom: 12px; }
+</style>
+</head>
+<body class="no-chrome">
+<div class="app">
+
+  <header class="appbar">
+    <button class="icon-btn" onclick="go('bookstore')" title="返回书城"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button>
+    <h1>作品详情</h1>
+    <button class="icon-btn" onclick="toast('原型演示：已复制分享链接')" title="分享"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15.5V4M8.2 7.6L12 3.8l3.8 3.8M5.5 13.5v6h13v-6"/></svg></button>
+  </header>
+
+  <main class="detail-body">
+    <!-- 封面 + 基本信息 -->
+    <section class="hero">
+      <div class="cover" id="dCover"></div>
+      <div class="meta">
+        <h2 id="dTitle"></h2>
+        <p class="au" id="dAuthor"></p>
+        <div class="tags" id="dTags"></div>
+        <div class="price" id="dPrice"></div>
+      </div>
+    </section>
+
+    <!-- 作品简介 -->
+    <section class="section">
+      <h3>作品简介</h3>
+      <p class="syn" id="dSyn"></p>
+    </section>
+
+    <!-- 作品信息 -->
+    <section class="section">
+      <h3>作品信息</h3>
+      <div class="kv" id="dKv"></div>
+    </section>
+
+    <!-- 作者联系 -->
+    <section class="section">
+      <h3>作者联系</h3>
+      <div class="kv" id="dCt"></div>
+      <p class="notice" style="margin-top:10px">· 以上联系方式由作者本人提供，供甲方线下洽谈与签署合同使用，平台不参与交易过程。</p>
+    </section>
+
+    <!-- 选集阅读 -->
+    <section class="section">
+      <div class="trial-head">
+        <h3>选集试读</h3>
+        <span class="trial-tip">作者已上传 <b id="dEpsN"></b> 集 · 全部可看</span>
+      </div>
+      <div class="epgrid" id="epGrid"></div>
+      <button class="btn-outline trial-btn" id="trialBtn" onclick="playFirst()">阅读第 1 集</button>
+    </section>
+
+    <!-- 标签 -->
+    <section class="section">
+      <h3>标签</h3>
+      <div class="tagrow" id="dTagrow"></div>
+    </section>
+
+    <!-- 合作须知 -->
+    <section class="section">
+      <h3>合作须知</h3>
+      <p class="notice">· 已上传的试看集数全部免费阅读，付费内容为完整剧本。<br>· 线上购买：款项进入平台资金托管，版权交割确认后生成电子合同供双方签署。<br>· 也可发起询盘与创作者自行洽谈，线下签约交割。</p>
+    </section>
+  </main>
+
+  <!-- 交易操作栏 -->
+  <div class="actionbar">
+    <button class="fav" id="favBtn" onclick="toggleFav()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20.2s-7.6-4.8-9.3-9.2A4.9 4.9 0 0 1 12 6.9a4.9 4.9 0 0 1 9.3 4.1c-1.7 4.4-9.3 9.2-9.3 9.2z"/></svg><span>收藏</span></button>
+    <button class="btn-outline" onclick="openSheet('inq')">发起询盘</button>
+    <button class="btn-solid" onclick="openSheet('buy')">立即购买</button>
+  </div>
+
+  <!-- 询盘 / 购买弹层 -->
+  <div class="sheet-mask" id="sheetMask" onclick="openSheet(null)"></div>
+  <div class="sheet" id="inqSheet">
+    <h3>发起询盘</h3>
+    <div class="fgroup"><div class="ft">合作意向</div><div class="chips" id="inqChips"></div></div>
+    <div class="fld"><label>留言（选填）</label><textarea id="inqMsg" rows="3" placeholder="想对创作者说的话…"></textarea></div>
+    <div class="sheet-foot"><button class="btn-outline" onclick="openSheet(null)">取消</button><button class="btn-solid" onclick="sendInq()">发送询盘</button></div>
+  </div>
+  <div class="sheet" id="buySheet">
+    <h3>确认购买</h3>
+    <p class="buy-tip" id="buyTitle"></p>
+    <div class="buy-price" id="buyPrice"></div>
+    <p class="buy-tip">款项将进入平台资金托管，版权交割确认后释放给创作者；同时生成电子合同供双方签署，签署时需使用「我的」中保存的印章。</p>
+    <div class="sheet-foot"><button class="btn-outline" onclick="openSheet(null)">再想想</button><button class="btn-solid" onclick="doBuy()">确认购买</button></div>
+  </div>
+
+</div>
+<script src="js/app.js?v=17"></script>
+<script>
+/* ---------- 与书城一致的模拟数据 ---------- */
+var BOOKS = [
+  { t: '长风渡我',   a: '青山客',   sub: '都市', dur: '3-5分钟/集',  eps: 3, cost: '1万-5万',   price: 12000, st: '已上架',   tags: ['悬疑', '反转', '群像'], s: '夜航船上的摆渡人，载着一桩十年前的失踪悬案。', ct: { p: '13800002266', qq: '81234567', wx: 'qingshanke', em: 'qingshanke@script.cn' } },
+  { t: '春日宴迟',   a: '白鹭洲',   sub: '言情', dur: '3-5分钟/集',  eps: 5, cost: '5万-10万',  price: 68000, st: '已上架',   tags: ['大女主', '甜宠', '复仇'], s: '被退婚的侯府千金，靠一纸婚约重整家门。', ct: { p: '13911113344', qq: '', wx: 'bailuzhou66', em: 'bailuzhou@script.cn' } },
+  { t: '夜航船记',   a: '半盏灯',   sub: '悬疑', dur: '5-10分钟/集', eps: 2, cost: '1万-5万',   price: 30000, st: '审核中',   tags: ['悬疑', '群像', '反转'], s: '夜航船上八位旅客，各怀一段不可告人的往事。', ct: { p: '13722224455', qq: '90012345', wx: '', em: '' } },
+  { t: '山海拾遗',   a: '关山月',   sub: '玄幻', dur: '1-3分钟/集',  eps: 12, cost: '免费',      price: 0,     st: '已上架',   tags: ['志异', '治愈'], s: '最后一个灵兽观察者写下的山海志异。', ct: { p: '13633335566', qq: '', wx: '', em: 'guanshanyue@script.cn' } },
+  { t: '锦绣成灰',   a: '陌生',     sub: '古装', dur: '5-10分钟/集', eps: 4, cost: '5万-10万',  price: 45000, st: '已上架',   tags: ['权谋', '大女主', '虐恋'], s: '绣娘入宫局，以针线搅动朝堂风云。', ct: { p: '13544446677', qq: '77889900', wx: 'mosheng_wx', em: '' } },
+  { t: '星夜兼程',   a: '林中和',   sub: '都市', dur: '1-3分钟/集',  eps: 4, cost: '1万以下',   price: 8000,  st: '已上架',   tags: ['治愈', '群像'], s: '深夜电台主播与城市失眠者互相治愈。', ct: { p: '13455557788', qq: '', wx: 'linzhonghe', em: '' } },
+  { t: '风雪夜归人', a: '苏白',     sub: '古装', dur: '3-5分钟/集',  eps: 3, cost: '1万-5万',   price: 26000, st: '已存证',   tags: ['虐恋', '复仇'], s: '雪夜刀客回边关，只为一句十年之约。', ct: { p: '13366668899', qq: '66778899', wx: '', em: 'subai@script.cn' } },
+  { t: '无间之名',   a: '沉野',     sub: '悬疑', dur: '1-3分钟/集',  eps: 1, cost: '免费',      price: 0,     st: '审核中',   tags: ['悬疑', '反转', '复仇'], s: '一封匿名信，牵出被掩埋的冤案真相。', ct: { p: '13277779900', qq: '', wx: 'chenye_wx', em: 'chenye@script.cn' } },
+  { t: '银河修理员', a: '陆离',     sub: '科幻', dur: '3-5分钟/集',  eps: 6, cost: '5万-10万',  price: 26000, st: '已上架',   tags: ['科幻', '治愈', '群像'], s: '退休飞船修理员与漂流在银河废墟里的 AI 少女。', ct: { p: '13911002233', qq: '45678912', wx: 'luli_sf', em: 'luli@script.cn' } },
+  { t: '楼下请回答', a: '阿盏',     sub: '喜剧', dur: '1-3分钟/集',  eps: 8, cost: '1万以下',   price: 6000,  st: '已上架',   tags: ['喜剧', '群像', '治愈'], s: '一通深夜电台连线，串起整栋居民楼的荒诞日常。', ct: { p: '13722003344', qq: '', wx: 'azhan_radio', em: '' } },
+  { t: '巷尾早餐铺', a: '温言',     sub: '现实', dur: '3-5分钟/集',  eps: 4, cost: '1万-5万',   price: 15000, st: '已上架',   tags: ['治愈', '群像', '大女主'], s: '开了二十年的早餐铺，见证老街三代人的来与往。', ct: { p: '13633004455', qq: '78945612', wx: '', em: 'wenyan@script.cn' } },
+  { t: '凤栖台',     a: '谢琳琅',   sub: '古装', dur: '5-10分钟/集', eps: 6, cost: '5万-10万',  price: 52000, st: '审核中',   tags: ['权谋', '复仇', '大女主'], s: '落难公主化名入宫，一步步收回地图上的旧山河。', ct: { p: '13544005566', qq: '', wx: 'xielinlang', em: '' } },
+  { t: '雾港迷案',   a: '沈孤舟',   sub: '悬疑', dur: '5-10分钟/集', eps: 5, cost: '1万-5万',   price: 22000, st: '已上架',   tags: ['悬疑', '反转', '复仇'], s: '雾港小镇三桩旧案，最终指向同一艘失踪的船。', ct: { p: '13455006677', qq: '32165498', wx: 'shenguzhou', em: 'shengz@script.cn' } },
+  { t: '心动信号塔', a: '苏浅浅',   sub: '言情', dur: '1-3分钟/集',  eps: 10, cost: '免费',     price: 0,     st: '已上架',   tags: ['甜宠', '治愈', '大女主'], s: '信号塔修理员与气象观测员，在电波里交换心动。', ct: { p: '13366007788', qq: '', wx: '', em: 'suqq@script.cn' } },
+  { t: '山神娶亲',   a: '白泽君',   sub: '玄幻', dur: '3-5分钟/集',  eps: 7, cost: '1万-5万',   price: 18000, st: '已存证',   tags: ['志异', '反转', '虐恋'], s: '山神六十年一娶亲，今年娶到的新娘带着斩妖刀。', ct: { p: '13277008899', qq: '65498732', wx: 'baizejun', em: '' } },
+  { t: '重启2009',   a: '老周不老', sub: '都市', dur: '3-5分钟/集',  eps: 9, cost: '1万-5万',   price: 20000, st: '已上架',   tags: ['反转', '复仇', '群像'], s: '破产夜中年男人睁眼回到 2009，记忆全在。', ct: { p: '13188009900', qq: '', wx: 'laozhou09', em: 'laozhou@script.cn' } }
+];
+function fmtPrice(p) { return p > 0 ? '¥' + p.toLocaleString('zh-CN') : '免费'; }
+
+/* ---------- 读取当前作品（?t=作品名） ---------- */
+function param(name) { var m = location.search.match(new RegExp('[?&]' + name + '=([^&]*)')); return m ? decodeURIComponent(m[1]) : ''; }
+var cur = (function () { var t = param('t'); for (var i = 0; i < BOOKS.length; i++) if (BOOKS[i].t === t) return BOOKS[i]; return BOOKS[0]; })();
+
+/* ---------- 渲染 ---------- */
+function stTag(st) { return st === '已上架' ? 'tag ok' : st === '审核中' ? 'tag warn' : 'tag st'; }
+document.getElementById('dCover').innerHTML = '<img src="' + cvSrc(cur.t) + '" alt="">';
+document.getElementById('dTitle').textContent = cur.t;
+document.getElementById('dAuthor').textContent = cur.a + ' 著 · ' + cur.sub;
+document.getElementById('dTags').innerHTML = '<span class="' + stTag(cur.st) + '">' + cur.st + '</span><span class="tag">' + cur.sub + '</span><span class="tag">' + cur.dur + '</span>';
+document.getElementById('dSyn').textContent = cur.s;
+document.getElementById('dPrice').textContent = fmtPrice(cur.price);
+document.getElementById('dKv').innerHTML = [
+  ['题材', cur.sub], ['时长', cur.dur], ['可看集数', cur.eps + ' 集（作者已上传）'], ['预期成本', cur.cost],
+  ['标注价格', fmtPrice(cur.price)], ['审核状态', cur.st], ['字数', '12.6 万字'], ['更新', '2026-09-01']
+].map(function (x) { return '<div><div class="k">' + x[0] + '</div><div class="v">' + x[1] + '</div></div>'; }).join('');
+document.getElementById('dTagrow').innerHTML = (cur.tags || []).map(function (t) { return '<span>' + t + '</span>'; }).join('') || '<span>暂无标签</span>';
+/* 作者联系方式：电话必有，其余有则展示 */
+var CT = cur.ct || {};
+document.getElementById('dCt').innerHTML = [
+  ['电话号码', CT.p || '未提供'], ['QQ', CT.qq || '未提供'], ['微信', CT.wx || '未提供'], ['电子邮箱', CT.em || '未提供']
+].map(function (x) { return '<div><div class="k">' + x[0] + '</div><div class="v">' + x[1] + '</div></div>'; }).join('');
+
+/* ---------- 收藏 ---------- */
+var FKEY = 'bd_fav';
+function getFav() { try { return JSON.parse(localStorage.getItem(FKEY)) || []; } catch (e) { return []; } }
+function isFav() { return getFav().indexOf(cur.t) > -1; }
+function renderFav() { document.getElementById('favBtn').classList.toggle('on', isFav()); }
+function toggleFav() {
+  var f = getFav(); var i = f.indexOf(cur.t);
+  if (i > -1) f.splice(i, 1); else f.push(cur.t);
+  localStorage.setItem(FKEY, JSON.stringify(f));
+  renderFav();
+  toast(i > -1 ? '已取消收藏' : '已收藏');
+}
+
+/* ---------- 询盘 / 购买弹层 ---------- */
+var INQS = ['翻拍授权', '独家买断', '联名开发'];
+var inqCur = INQS[0];
+function renderInqChips() {
+  document.getElementById('inqChips').innerHTML = INQS.map(function (v) {
+    return '<button class="chip' + (inqCur === v ? ' on' : '') + '" onclick="setInq(\'' + v + '\')">' + v + '</button>';
+  }).join('');
+}
+function setInq(v) { inqCur = v; renderInqChips(); }
+function openSheet(which) {
+  document.getElementById('sheetMask').classList.toggle('show', !!which);
+  document.getElementById('inqSheet').classList.toggle('show', which === 'inq');
+  document.getElementById('buySheet').classList.toggle('show', which === 'buy');
+  if (which === 'buy') {
+    document.getElementById('buyTitle').textContent = '《' + cur.t + '》 · ' + cur.sub + ' · ' + cur.dur + ' · 完整剧本';
+    document.getElementById('buyPrice').textContent = fmtPrice(cur.price);
+  }
+}
+function sendInq() { openSheet(null); toast('询盘已发送，等待创作者报价'); }
+function doBuy() {
+  openSheet(null);
+  if (cur.price <= 0) { toast('该作品标注免费，可直接发起询盘洽谈合作'); return; }
+  toast('原型演示：已创建托管订单并生成电子合同，待双方盖章签署');
+}
+
+/* ---------- 选集阅读：已上传集全部可看，跳转阅读页 ---------- */
+function renderEps() {
+  var h = '';
+  for (var i = 1; i <= cur.eps; i++) {
+    h += '<button class="ep free" onclick="playEp(' + i + ')">' + i + '</button>';
+  }
+  document.getElementById('epGrid').innerHTML = h;
+  document.getElementById('dEpsN').textContent = cur.eps;
+}
+function playEp(n) {
+  location.href = 'read.html?t=' + encodeURIComponent(cur.t) + '&ep=' + n;
+}
+function playFirst() { playEp(1); }
+
+renderFav();
+renderInqChips();
+renderEps();
+</script>
+</body>
+</html>

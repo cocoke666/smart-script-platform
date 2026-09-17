@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  网络安全配置：默认禁止明文流量（生产必须走 HTTPS）。
+  仅为本地联调放通模拟器/本机回环地址；真机联调请把局域网 IP 加入下面的 domain 列表，
+  生产环境请保持 base-config 为 false 并全部使用 HTTPS 域名。
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Android 模拟器访问宿主机 -->
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>分类 · 智能剧本创作平台原型</title>
+<link rel="stylesheet" href="css/app.css?v=7">
+<style>
+/* ---------- 分类页专属样式：顶部频道 + 左分组栏 + 右双列分类卡 ---------- */
+.chans { display: flex; gap: 18px; flex: 1; align-items: center; }
+.chan { border: none; background: none; padding: 4px 0; font-size: 15px; color: var(--text-2); cursor: pointer; }
+.chan.on { font-size: 17px; font-weight: 700; color: var(--text-1); }
+.chan.on::after { content: ''; display: block; height: 3px; border-radius: 2px; background: var(--primary); margin-top: 2px; }
+.catwrap { display: flex; align-items: stretch; height: 100%; }
+.cside { flex: none; width: 84px; background: var(--fill); overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
+.cside::-webkit-scrollbar { display: none; }
+.cside button { display: block; width: 100%; border: none; background: none; padding: 17px 0; font-size: 13px; color: var(--text-2); cursor: pointer; }
+.cside button.on { background: var(--card); color: var(--primary); font-weight: 600; }
+.cmain { flex: 1; min-width: 0; padding: 4px 12px 16px; background: var(--card); overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
+.cmain::-webkit-scrollbar { display: none; }
+.csec { font-size: 12px; color: var(--text-3); margin: 14px 0 10px; font-weight: 400; }
+.cgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ccard { display: flex; align-items: center; justify-content: space-between; gap: 8px; border: none; background: var(--fill); border-radius: 10px; padding: 12px 10px; cursor: pointer; }
+.ccard b { font-size: 13px; color: var(--text-1); text-align: left; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ccard .th { flex: none; width: 34px; height: 46px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; writing-mode: vertical-rl; letter-spacing: 2px; overflow: hidden; }
+.ccard .th.g1 { background: linear-gradient(160deg, #2F5FA8, #1B3A6B); }
+.ccard .th.g2 { background: linear-gradient(160deg, #254E90, #16305C); }
+.ccard .th.g3 { background: linear-gradient(160deg, #4A76B8, #2A4C86); }
+.ccard .th.ic { writing-mode: horizontal-tb; font-size: 12px; font-weight: 700; }
+.ccard .th.ic.all { background: var(--primary); }
+.ccard .th.ic.hot { background: #D97B41; }
+.ccard .th.ic.new { background: #3BAF6E; }
+.ccard .th.ic.pop { background: #5B8FD9; }
+</style>
+</head>
+<body data-tab="category">
+<div class="app">
+
+  <header class="appbar">
+    <button class="icon-btn" onclick="openDrawer(true)" title="工具与设置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <div class="chans" id="chans"></div>
+    <span style="width:28px;flex:none"></span>
+  </header>
+
+  <main class="page-body" style="overflow:hidden;padding-bottom:0">
+    <div class="catwrap">
+      <aside class="cside" id="cside"></aside>
+      <div class="cmain" id="cmain"></div>
+    </div>
+  </main>
+
+</div>
+<script src="js/app.js?v=17"></script>
+<script>
+/* ---------- 频道与分组数据 ---------- */
+var CH = 'script';
+function items(arr) { return arr.map(function (v) { return { v: v }; }); }
+var GROUPS = {
+  script: [
+    { g: '热门', items: [{ v: '全部作品', ic: 'all' }, { v: '高分作品', ic: 'hot' }, { v: '新作上架', ic: 'new' }, { v: '热门试读', ic: 'pop' }] },
+    { g: '题材', items: items(['都市', '古装', '玄幻', '言情', '悬疑', '科幻', '喜剧', '现实', '治愈']) },
+    { g: '情节', items: items(['悬疑', '反转', '复仇', '大女主', '甜宠', '虐恋', '群像', '权谋', '志异', '治愈']) },
+    { g: '状态', items: items(['已上架', '审核中', '已存证']) }
+  ],
+  comic: [
+    { g: '热门', items: [{ v: '全部漫剧', ic: 'all' }] },
+    { g: '题材', items: items(['都市', '言情', '玄幻', '悬疑']) }
+  ]
+};
+
+/* ---------- 渲染 ---------- */
+function renderChans() {
+  document.getElementById('chans').innerHTML = [['script', '剧本'], ['comic', '漫剧']].map(function (c) {
+    return '<button class="chan' + (CH === c[0] ? ' on' : '') + '" onclick="setCh(\'' + c[0] + '\')">' + c[1] + '</button>';
+  }).join('');
+}
+function setCh(c) { CH = c; renderChans(); renderSide(); renderMain(); document.getElementById('cmain').scrollTop = 0; }
+function renderSide() {
+  document.getElementById('cside').innerHTML = GROUPS[CH].map(function (s, i) {
+    return '<button id="side' + i + '" onclick="jumpSec(' + i + ')">' + s.g + '</button>';
+  }).join('');
+}
+function markSide(i) {
+  GROUPS[CH].forEach(function (s, k) {
+    var b = document.getElementById('side' + k);
+    if (b) b.classList.toggle('on', k === i);
+  });
+}
+/* 右栏为唯一滚动容器：只滚内容区，顶栏与左栏保持不动 */
+function relTop(el, box) { return el.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop; }
+function jumpSec(i) {
+  var el = document.getElementById('sec' + i);
+  var box = document.getElementById('cmain');
+  if (el) box.scrollTo({ top: Math.max(relTop(el, box) - 4, 0), behavior: 'smooth' });
+  markSide(i);
+}
+document.getElementById('cmain').addEventListener('scroll', function () {
+  var box = this, top = box.scrollTop + 12, idx = 0;
+  GROUPS[CH].forEach(function (s, i) {
+    var el = document.getElementById('sec' + i);
+    if (el && relTop(el, box) <= top) idx = i;
+  });
+  markSide(idx);
+});
+function cardHTML(s, it, i) {
+  var th = it.ic
+    ? '<span class="th ic ' + it.ic + '">' + ({ all: '全', hot: '热', new: '新', pop: '爆' })[it.ic] + '</span>'
+    : '<span class="th g' + (i % 3 + 1) + '">' + it.v.slice(0, 2) + '</span>';
+  return '<button class="ccard" onclick="location.href=\'category_detail.html?ch=' + CH + '&g=' + encodeURIComponent(s.g) + '&v=' + encodeURIComponent(it.v) + '\'">' +
+    '<b>' + it.v + '</b>' + th + '</button>';
+}
+function renderMain() {
+  document.getElementById('cmain').innerHTML = GROUPS[CH].map(function (s, i) {
+    return '<div id="sec' + i + '"><h3 class="csec">' + s.g + '分类</h3><div class="cgrid">' +
+      s.items.map(function (it, k) { return cardHTML(s, it, k); }).join('') +
+      '</div></div>';
+  }).join('');
+  markSide(0);
+}
+renderChans();
+renderSide();
+renderMain();
+</script>
+</body>
+</html>

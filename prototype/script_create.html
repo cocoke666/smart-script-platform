@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>剧本大纲 · 智能剧本创作平台原型</title>
+<link rel="stylesheet" href="css/app.css?v=7">
+<style>
+/* ---------- 剧本创作页专属样式 ---------- */
+.cardbox { margin: 12px 16px; border: none; border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow-card); padding: 14px; }
+.cardbox h3 { font-size: 14px; color: var(--text-1); margin-bottom: 10px; }
+.fld { margin-bottom: 10px; }
+.fld label { display: block; font-size: 12px; color: var(--text-2); margin-bottom: 4px; }
+.fld input, .fld textarea, .fld select { width: 100%; border: 1px solid var(--divider); border-radius: 8px; padding: 8px 10px; font-size: 13px; background: var(--card); color: var(--text-1); font-family: inherit; outline: none; }
+.fld input:focus, .fld textarea:focus, .fld select:focus { border-color: var(--primary); }
+.fld-row { display: flex; gap: 10px; }
+.fld-row .fld { flex: 1; }
+/* 标签编辑器 */
+.taged { border: 1px solid var(--divider); border-radius: 8px; padding: 8px; }
+.taged .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.taged .chips:empty { margin-bottom: 0; }
+.taged .tchip { display: flex; align-items: center; gap: 5px; font-size: 11px; background: var(--primary-tint); color: var(--primary); border-radius: 6px; padding: 4px 8px; }
+.taged .tchip span { cursor: pointer; font-size: 12px; line-height: 1; }
+.taged .row { display: flex; gap: 6px; }
+.taged .row input { flex: 1; width: auto; border: 1px solid var(--divider); border-radius: 6px; padding: 6px 8px; font-size: 12px; outline: none; }
+.taged .row input:focus { border-color: var(--primary); }
+.taged .row button { border: none; background: var(--primary-tint); color: var(--primary); border-radius: 6px; padding: 0 12px; font-size: 12px; cursor: pointer; flex: none; }
+/* 生成结果 */
+.cresult { margin-top: 12px; border: 1px dashed var(--divider); border-radius: 10px; padding: 12px; background: var(--bg); }
+.cresult .rh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.cresult .rh b { font-size: 14px; color: var(--text-1); }
+.cresult .rh span { font-size: 11px; color: var(--primary); background: var(--primary-tint); border-radius: 6px; padding: 2px 8px; }
+.cresult .ri { font-size: 12px; color: var(--text-2); line-height: 1.7; margin-bottom: 6px; }
+.cresult .ra { font-size: 11px; color: var(--text-3); margin-top: 6px; }
+.cresult .ops { display: flex; justify-content: flex-end; margin-top: 8px; }
+.cresult .ops button { height: 30px; padding: 0 12px; border: none; border-radius: 8px; background: var(--primary-tint); color: var(--primary); font-size: 12px; cursor: pointer; }
+.qtip { font-size: 11px; color: var(--text-3); text-align: center; margin-top: 6px; }
+</style>
+</head>
+<body data-tab="create">
+<div class="app">
+
+  <header class="appbar">
+    <button class="icon-btn" onclick="openDrawer(true)" title="工具与设置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <h1>剧本大纲</h1>
+    <span style="width:28px;flex:none"></span>
+  </header>
+
+  <main class="page-body">
+    <section class="cardbox">
+      <h3>新作品信息</h3>
+      <div class="fld"><label>作品名称</label><input id="cTitle" placeholder="给新作品起个名字"></div>
+      <div class="fld-row">
+        <div class="fld"><label>题材</label><select id="cGenre">
+          <option>古装言情</option><option>都市悬疑</option><option>穿越复仇</option><option>科幻末世</option><option>喜剧轻喜</option>
+        </select></div>
+        <div class="fld"><label>篇幅</label><select id="cLen">
+          <option>短剧 12 集</option><option>短剧 24 集</option><option>电影剧本</option><option>舞台剧</option>
+        </select></div>
+      </div>
+      <div class="fld"><label>风格标签（AI 生成大纲时会参考）</label>
+        <div class="taged">
+          <div class="chips" id="cTags"></div>
+          <div class="row"><input id="cTagInput" placeholder="输入标签后点添加或回车"><button onclick="addCTag()">添加</button></div>
+        </div>
+      </div>
+      <div class="fld"><label>创作灵感 / 一句话故事</label><textarea id="cIdea" rows="3" placeholder="如：末世轮船上，摆渡人替亡魂完成遗愿…"></textarea></div>
+      <button class="btn-solid" style="width:100%" onclick="genDraft()">AI 生成大纲</button>
+      <p class="qtip" id="qTip"></p>
+      <div id="cResult" class="cresult" style="display:none"></div>
+    </section>
+  </main>
+
+</div>
+<script src="js/app.js?v=17"></script>
+<script>
+/* ---------- 标签编辑 ---------- */
+var cTags = [];
+function renderCTags() {
+  document.getElementById('cTags').innerHTML = cTags.map(function (t, i) {
+    return '<span class="tchip">' + t + '<span onclick="delCTag(' + i + ')">×</span></span>';
+  }).join('');
+}
+function addCTag() {
+  var el = document.getElementById('cTagInput');
+  var v = el.value.trim();
+  if (!v) { toast('请输入标签内容'); return; }
+  if (cTags.indexOf(v) > -1) { toast('标签已存在'); return; }
+  if (cTags.length >= 8) { toast('最多添加 8 个标签'); return; }
+  cTags.push(v);
+  el.value = '';
+  renderCTags();
+}
+function delCTag(i) {
+  cTags.splice(i, 1);
+  renderCTags();
+}
+
+/* ---------- AI 生成大纲（参考标签） ---------- */
+function genDraft() {
+  var idea = document.getElementById('cIdea').value.trim();
+  if (!idea) { toast('请先写一句创作灵感'); return; }
+  if (!useQuota('outline')) { toast('AI 大纲次数已用完，请到福利 - 积分商店兑换'); renderQ(); return; }
+  renderQ();
+  var t = document.getElementById('cTitle').value.trim() || '未命名';
+  var g = document.getElementById('cGenre').value;
+  var len = document.getElementById('cLen').value;
+  var lines = [];
+  lines.push('一句话故事：' + idea);
+  if (cTags.length) lines.push('风格标签：' + cTags.join(' / ') + '（以下大纲围绕标签展开）');
+  lines.push('第一幕（建置）：主角因一句话故事中的事件入局，交代世界规则与人物关系。');
+  lines.push('第二幕（发展）：对手现身，主角在中点遭遇挫败' + (cTags.length ? '，并嵌入「' + cTags[0] + '」式视觉与情绪记忆点' : '') + '，真相开始反转。');
+  lines.push('第三幕（解决）：主角在 climax 做出核心选择，冲突收束，主题落地。');
+  if (cTags.length > 1) lines.push('卖点融合：围绕「' + cTags.slice(1).join('」「') + '」设计名场面与宣传卖点。');
+  var box = document.getElementById('cResult');
+  box.innerHTML = '<div class="rh"><b>《' + t + '》创作大纲</b><span>' + g + ' · ' + len + '</span></div>' +
+    lines.map(function (x, i) { return '<div class="ri">' + ['一', '二', '三', '四', '五', '六'][i] + '、' + x + '</div>'; }).join('') +
+    '<div class="ra">以上为原型演示文本，正式版将接入 AI 智能创作引擎。</div>' +
+    '<div class="ops"><button onclick="toast(\'大纲已保存，可在我的剧本查看（演示）\')">保存大纲</button></div>';
+  box.style.display = 'block';
+  toast(cTags.length ? '大纲已生成（参考 ' + cTags.length + ' 个标签）' : '大纲已生成');
+}
+
+document.getElementById('cTagInput').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') { e.preventDefault(); addCTag(); }
+});
+
+/* ---------- 剩余次数提示（福利 - 积分商店兑换） ---------- */
+function renderQ() {
+  document.getElementById('qTip').textContent = '剩余 AI 大纲次数：' + (getQuota().outline || 0) + ' · 可在福利 - 积分商店用积分兑换';
+}
+renderQ();
+</script>
+</body>
+</html>

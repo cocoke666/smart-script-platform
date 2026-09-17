@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>创作者后台 · 智能剧本创作平台原型</title>
+<link rel="stylesheet" href="css/app.css?v=7">
+<style>
+/* ---------- 创作者后台专属样式 ---------- */
+.cardbox { margin: 12px 16px; border: none; border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow-card); padding: 14px; }
+.cardbox h3 { font-size: 14px; margin-bottom: 8px; color: var(--text-1); }
+.sum-card { margin: 12px 16px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; border-radius: var(--radius); padding: 18px 8px; display: flex; text-align: center; box-shadow: var(--shadow-card); }
+.sum-card > div { flex: 1; }
+.sum-card b { display: block; font-size: 19px; margin-bottom: 4px; font-weight: 600; }
+.sum-card span { font-size: 11px; color: rgba(255, 255, 255, .72); }
+.kv { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.kv .k { font-size: 11px; color: var(--text-3); margin-bottom: 2px; }
+.kv .v { font-size: 13px; color: var(--text-1); font-weight: 500; }
+/* 审核进度行 */
+.wrow { padding: 11px 0; border-bottom: 1px solid var(--divider); }
+.wrow:last-child { border-bottom: none; }
+.wrow .top { display: flex; justify-content: space-between; align-items: center; }
+.wrow h4 { font-size: 13px; color: var(--text-1); font-weight: 500; }
+.wrow .st { font-size: 11px; border-radius: 10px; padding: 2px 8px; }
+.wrow .st.ok { background: var(--primary-tint); color: var(--primary); }
+.wrow .st.ing { background: #FBEEE6; color: #D97B41; }
+.msteps { display: flex; gap: 4px; margin: 8px 0 5px; }
+.msteps i { flex: 1; height: 4px; border-radius: 2px; background: var(--fill); }
+.msteps i.on { background: var(--primary); }
+.wrow p { font-size: 11px; color: var(--text-3); }
+/* 收益明细 */
+.rec { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-2); padding: 8px 0; border-bottom: 1px dashed var(--divider); }
+.rec:last-child { border-bottom: none; }
+.rec .plus { color: var(--primary); font-weight: 600; }
+.note { font-size: 11px; color: var(--text-3); line-height: 1.8; margin: 0 16px 14px; }
+</style>
+</head>
+<body data-tab="profile">
+<div class="app">
+
+  <header class="appbar">
+    <button class="icon-btn" onclick="openDrawer(true)" title="工具与设置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <h1>创作者后台</h1>
+    <span style="width:28px;flex:none"></span>
+  </header>
+
+  <main class="page-body">
+    <!-- 收益总览 -->
+    <div class="sum-card">
+      <div><b>¥171,000.00</b><span>累计收益</span></div>
+      <div><b>¥65,000.00</b><span>本月收益</span></div>
+      <div><b>5 单</b><span>成交订单</span></div>
+    </div>
+
+    <!-- 数据概览 -->
+    <section class="cardbox">
+      <h3>数据概览</h3>
+      <div class="kv">
+        <div><div class="k">上架作品</div><div class="v">5 部</div></div>
+        <div><div class="k">审核中作品</div><div class="v">3 部</div></div>
+        <div><div class="k">可看集数合计</div><div class="v">34 集</div></div>
+        <div><div class="k">被收藏次数</div><div class="v">1,286 次</div></div>
+        <div><div class="k">本月收到询盘</div><div class="v">6 条</div></div>
+        <div><div class="k">线下签约合作</div><div class="v">2 单</div></div>
+      </div>
+    </section>
+
+    <!-- 剧本审核进度 -->
+    <section class="cardbox">
+      <h3>剧本审核进度</h3>
+      <div id="wList"></div>
+    </section>
+
+    <!-- 收益明细 -->
+    <section class="cardbox">
+      <h3>收益明细</h3>
+      <div id="recList"></div>
+    </section>
+
+    <p class="note">· 收益为平台线上购买的完整剧本交易款项，版权交割确认后自动释放至余额。<br>· 试读为免费曝光，不产生收益；双方线下自行结算的款项不计入此处。</p>
+  </main>
+
+</div>
+<script src="js/app.js?v=17"></script>
+<script>
+/* ---------- 审核进度：四步流程 ---------- */
+var FLOW = ['提交成功', '平台 AI 初筛', '版权中心审核', '试看上架'];
+var MYWORKS = [
+  { t: '长风渡我',   done: 4 },
+  { t: '春日宴迟',   done: 4 },
+  { t: '锦绣成灰',   done: 4 },
+  { t: '山海拾遗',   done: 4 },
+  { t: '星夜兼程',   done: 4 },
+  { t: '夜航船记',   done: 3 },
+  { t: '风雪夜归人', done: 3 },
+  { t: '无间之名',   done: 2 }
+];
+function renderWorks() {
+  document.getElementById('wList').innerHTML = MYWORKS.map(function (w) {
+    var ok = w.done >= FLOW.length;
+    var tip = ok ? '已上架试看，读者可阅读全部已上传集数' : '当前进度：' + FLOW[w.done] + '（进行中），预计 1-3 个工作日';
+    return '<div class="wrow"><div class="top"><h4>《' + w.t + '》</h4>' +
+      '<span class="st ' + (ok ? 'ok' : 'ing') + '">' + (ok ? '已上架' : FLOW[w.done]) + '</span></div>' +
+      '<div class="msteps">' + FLOW.map(function (s, i) { return '<i class="' + (i < w.done ? 'on' : '') + '"></i>'; }).join('') + '</div>' +
+      '<p>' + FLOW.map(function (s, i) { return i === (ok ? FLOW.length - 1 : w.done) ? '<b style="color:var(--primary)">' + s + '</b>' : s; }).join(' → ') + '</p>' +
+      '<p style="margin-top:3px">' + tip + '</p></div>';
+  }).join('');
+}
+
+/* ---------- 收益明细：线上交易托管释放 ---------- */
+var RECS = [
+  { d: '2026-09-10', t: '长风渡我',   lab: '完整剧本购买 · 托管释放', amt: '12,000.00' },
+  { d: '2026-09-08', t: '锦绣成灰',   lab: '完整剧本购买 · 托管释放', amt: '45,000.00' },
+  { d: '2026-09-02', t: '星夜兼程',   lab: '完整剧本购买 · 托管释放', amt: '8,000.00' },
+  { d: '2026-08-26', t: '春日宴迟',   lab: '独家买断 · 合同尾款',     amt: '68,000.00' },
+  { d: '2026-08-15', t: '山海拾遗',   lab: '翻拍授权 · 托管释放',   amt: '38,000.00' }
+];
+function renderRecs() {
+  document.getElementById('recList').innerHTML = RECS.map(function (r) {
+    return '<div class="rec"><span>' + r.d + ' · 《' + r.t + '》' + r.lab + '</span><span class="plus">+¥' + r.amt + '</span></div>';
+  }).join('');
+}
+
+renderWorks();
+renderRecs();
+</script>
+</body>
+</html>

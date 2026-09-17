@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>辅助润色 · 智能剧本创作平台原型</title>
+<link rel="stylesheet" href="css/app.css?v=7">
+<style>
+/* ---------- 辅助润色页专属样式 ---------- */
+.cardbox { margin: 12px 16px; border: none; border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow-card); padding: 14px; }
+.cardbox h3 { font-size: 14px; color: var(--text-1); margin-bottom: 10px; }
+.fld { margin-bottom: 10px; }
+.fld label { display: block; font-size: 12px; color: var(--text-2); margin-bottom: 4px; }
+.fld input, .fld textarea, .fld select { width: 100%; border: 1px solid var(--divider); border-radius: 8px; padding: 8px 10px; font-size: 13px; background: var(--card); color: var(--text-1); font-family: inherit; outline: none; }
+.fld input:focus, .fld textarea:focus, .fld select:focus { border-color: var(--primary); }
+.fld-row { display: flex; gap: 10px; }
+.fld-row .fld { flex: 1; }
+.tip { font-size: 11px; color: var(--text-3); line-height: 1.6; }
+.docrow { display: flex; align-items: center; gap: 10px; }
+.docrow button.pick { flex: none; height: 34px; padding: 0 12px; border: none; border-radius: 8px; background: var(--primary-tint); color: var(--primary); font-size: 12px; cursor: pointer; }
+.docrow .chipdoc { flex: 1; min-width: 0; font-size: 12px; color: var(--text-2); background: var(--fill); border-radius: 8px; padding: 8px 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.docrow .chipdoc.on { color: var(--primary); background: var(--primary-tint); }
+.docrow button.clr { flex: none; border: none; background: none; color: var(--text-3); font-size: 14px; cursor: pointer; }
+.pblock { margin-top: 12px; border-radius: 10px; padding: 12px; }
+.pblock.src { border: 1px solid var(--divider); background: var(--card); }
+.pblock.dst { border: 1px dashed var(--primary); background: var(--primary-tint); }
+.pblock .bt { font-size: 12px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; }
+.pblock.dst .bt { color: var(--primary); }
+.pblock .tx { font-size: 12px; color: var(--text-2); line-height: 1.8; white-space: pre-wrap; }
+.resmeta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+.resmeta span { font-size: 11px; color: var(--text-2); background: var(--fill); border-radius: 6px; padding: 3px 8px; }
+.resmeta span.hl { color: var(--primary); background: var(--primary-tint); }
+.ops4 { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.ops4 button { flex: 1; min-width: 40%; height: 34px; border: none; border-radius: 8px; background: var(--primary-tint); color: var(--primary); font-size: 12px; font-weight: 500; cursor: pointer; }
+.ops4 button.ghost { background: var(--fill); color: var(--text-2); }
+#editWrap textarea { width: 100%; min-height: 160px; border: 1px solid var(--divider); border-radius: 8px; padding: 10px; font-size: 12px; line-height: 1.8; background: var(--card); color: var(--text-1); font-family: inherit; outline: none; }
+#editWrap textarea:focus { border-color: var(--primary); }
+.docli { padding: 12px 0; border-bottom: 1px solid var(--divider); font-size: 13px; color: var(--text-1); display: flex; justify-content: space-between; cursor: pointer; }
+.docli:last-child { border-bottom: none; }
+.docli span:last-child { color: var(--text-3); font-size: 11px; }
+.qtip { font-size: 11px; color: var(--text-3); text-align: center; margin-top: 6px; }
+</style>
+</head>
+<body data-tab="create">
+<div class="app">
+
+  <header class="appbar">
+    <button class="icon-btn" onclick="openDrawer(true)" title="工具与设置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <h1>辅助润色</h1>
+    <span style="width:28px;flex:none"></span>
+  </header>
+
+  <main class="page-body">
+    <!-- 润色参数 -->
+    <section class="cardbox">
+      <h3>润色参数</h3>
+      <div class="fld-row">
+        <div class="fld"><label>文体</label><select id="pType">
+          <option>台词对白</option><option>叙述段落</option><option>内心独白</option><option>剧情梗概</option>
+        </select></div>
+        <div class="fld"><label>润色方向</label><select id="pDir">
+          <option>更口语</option><option>更文学</option><option>紧凑节奏</option><option>强化冲突</option><option>更对话化</option><option>温和校对</option>
+        </select></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>润色强度</label><select id="pStr">
+          <option>轻度</option><option>中度</option><option>深度</option>
+        </select></div>
+        <div class="fld"><label>目标用途</label><select id="pUse">
+          <option>投稿稿</option><option>排演稿</option><option>宣传文案</option>
+        </select></div>
+      </div>
+      <div class="fld"><label>保留词（选填，逗号分隔，润色时不改动）</label><input id="pKeep" placeholder="如：长风,渡魂,铜钱"></div>
+      <div class="fld"><label>原文</label><textarea id="pSrc" rows="5" placeholder="粘贴需要润色的台词或段落，如：然而他还是走了过来，于是她说道：我非常失望。"></textarea></div>
+      <button class="btn-solid" style="width:100%" onclick="doPolish()">开始润色</button>
+      <p class="qtip" id="qTip"></p>
+    </section>
+
+    <!-- 参考风格文档 -->
+    <section class="cardbox">
+      <h3>参考风格文档（选填）</h3>
+      <div class="docrow">
+        <button class="pick" onclick="openDocs(true)">上传风格文档</button>
+        <span class="chipdoc" id="docChip">未上传</span>
+        <button class="clr" onclick="clearDoc()" title="移除文档">×</button>
+      </div>
+      <p class="tip" style="margin-top:8px">上传风格样例或投稿规范后，润色将向该风格靠拢。</p>
+    </section>
+
+    <!-- 润色结果 -->
+    <section class="cardbox" id="pOut" style="display:none">
+      <h3 id="pTitle"></h3>
+      <div class="resmeta" id="pMeta"></div>
+      <div class="pblock src"><div class="bt">原文</div><div class="tx" id="pSrcOut"></div></div>
+      <div class="pblock dst"><div class="bt">润色后 · <span id="pDirOut"></span></div><div class="tx" id="pDstOut"></div></div>
+      <div class="ops4" id="pOps">
+        <button onclick="copyDst()">复制润色结果</button>
+        <button onclick="dlDst()">下载润色稿</button>
+        <button class="ghost" onclick="editToggle(true)">人工微调</button>
+        <button class="ghost" onclick="rePolish()">再润色一版</button>
+      </div>
+      <div class="fld" style="margin-top:10px"><label>润色意见（选填，供下一版参考）</label><textarea id="pFix" rows="2" placeholder="如：冲突再强一点、保留人物口头禅…"></textarea></div>
+      <div id="editWrap" style="display:none">
+        <textarea id="pEdit"></textarea>
+        <div class="ops4" style="margin-top:8px">
+          <button onclick="saveEdit()">保存人工微调</button>
+          <button class="ghost" onclick="editToggle(false)">取消</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 文档选择弹层 -->
+  <div class="sheet-mask" id="docMask" onclick="openDocs(false)"></div>
+  <div class="sheet" id="docSheet">
+    <h3>选择风格文档（模拟上传）</h3>
+    <div id="docList"></div>
+  </div>
+
+</div>
+<script src="js/app.js?v=17"></script>
+<script>
+/* ---------- 参考风格文档（模拟上传） ---------- */
+var DOCLIST = [
+  { n: '风格样例《长风》台词节选.txt', s: '18 KB' },
+  { n: '平台投稿规范.docx', s: '30 KB' },
+  { n: '排演用剧本格式说明.pdf', s: '22 KB' }
+];
+var docName = '';
+function openDocs(open) {
+  document.getElementById('docMask').classList.toggle('show', open);
+  document.getElementById('docSheet').classList.toggle('show', open);
+}
+function pickDoc(i) {
+  docName = DOCLIST[i].n;
+  var chip = document.getElementById('docChip');
+  chip.textContent = docName + '（' + DOCLIST[i].s + '）';
+  chip.classList.add('on');
+  openDocs(false);
+  toast('风格文档已上传');
+}
+function clearDoc() {
+  docName = '';
+  var chip = document.getElementById('docChip');
+  chip.textContent = '未上传';
+  chip.classList.remove('on');
+}
+(function () {
+  document.getElementById('docList').innerHTML = DOCLIST.map(function (d, i) {
+    return '<div class="docli" onclick="pickDoc(' + i + ')"><span>' + d.n + '</span><span>' + d.s + '</span></div>';
+  }).join('');
+})();
+
+/* ---------- 润色引擎 ---------- */
+var polish = { src: '', text: '', round: 0, manual: 0, hits: 0, meta: null };
+
+function splitKeeps() {
+  var v = document.getElementById('pKeep').value.trim();
+  if (!v) return [];
+  return v.split(/[,，]/).map(function (x) { return x.trim(); }).filter(function (x) { return x; });
+}
+function protectWords(s, keeps) {
+  keeps.forEach(function (w, i) { s = s.split(w).join('\u0001' + i + '\u0001'); });
+  return s;
+}
+function restoreWords(s, keeps) {
+  keeps.forEach(function (w, i) { s = s.split('\u0001' + i + '\u0001').join(w); });
+  return s;
+}
+function repCount(s, re, to, counter) {
+  return s.replace(re, function (m) { counter.n++; return to; });
+}
+function applyDir(s, dir, counter) {
+  if (dir === '更口语') {
+    s = repCount(s, /然而/g, '可', counter);
+    s = repCount(s, /于是/g, '就', counter);
+    s = repCount(s, /说道/g, '说', counter);
+    s = repCount(s, /非常/g, '特别', counter);
+    s = repCount(s, /片刻/g, '一会儿', counter);
+  } else if (dir === '更文学') {
+    s = repCount(s, /说/g, '道', counter);
+    s = repCount(s, /看/g, '望', counter);
+    s = repCount(s, /走/g, '行', counter);
+    s = repCount(s, /但是/g, '然', counter);
+    s = repCount(s, /好像/g, '宛若', counter);
+  } else if (dir === '紧凑节奏') {
+    s = repCount(s, /的时候/g, '时', counter);
+    s = repCount(s, /，/g, '。', counter);
+    s = s.replace(/。。/g, '。');
+  } else if (dir === '强化冲突') {
+    var sents = s.match(/[^。！？]+[。！？]?/g) || [s];
+    if (sents[0].indexOf('没人打算退') < 0) {
+      s = sents[0] + '——可这一回，没人打算退。' + sents.slice(1).join('');
+      counter.n++;
+    }
+  } else if (dir === '更对话化') {
+    var keeps2 = splitKeeps();
+    var sp = [keeps2[0] || '长风', keeps2[1] || '少女'];
+    var sents2 = s.match(/[^。！？]+[。！？]?/g) || [s];
+    s = sents2.map(function (x, i) {
+      counter.n++;
+      return sp[i % 2] + '：「' + x.replace(/[。！？]$/, '') + '。」';
+    }).join('');
+  } else if (dir === '温和校对') {
+    s = repCount(s, /，，+/g, '，', counter);
+    s = repCount(s, /。。+/g, '。', counter);
+    s = repCount(s, /\.\.\./g, '……', counter);
+  }
+  return s;
+}
+function runPipeline(src, meta, round) {
+  var counter = { n: 0 };
+  var keeps = meta.keeps;
+  var s = protectWords(src, keeps);
+  s = applyDir(s, meta.dir, counter);
+  if (meta.str === '中度' || meta.str === '深度') {
+    s = repCount(s, /，，+/g, '，', counter);
+    s = repCount(s, /\.\.\./g, '……', counter);
+    if (!/[。！？]$/.test(s)) { s += '。'; counter.n++; }
+  }
+  if (meta.str === '深度') {
+    var thr = Math.max(12 - round * 2, 6);
+    var re = new RegExp('([^，。！？]{' + thr + ',})，', 'g');
+    s = repCount(s, re, '$1。', counter);
+  }
+  s = restoreWords(s, keeps);
+  polish.hits = counter.n;
+  return s;
+}
+function collectMeta(fix) {
+  return {
+    type: document.getElementById('pType').value,
+    dir: document.getElementById('pDir').value,
+    str: document.getElementById('pStr').value,
+    use: document.getElementById('pUse').value,
+    keeps: splitKeeps(),
+    doc: docName,
+    fix: fix || ''
+  };
+}
+function doPolish() {
+  var src = document.getElementById('pSrc').value.trim();
+  if (!src) { toast('请先粘贴需要润色的原文'); return; }
+  if (!useQuota('polish')) { toast('辅助润色次数已用完，请到福利 - 积分商店兑换'); renderQ(); return; }
+  renderQ();
+  polish.src = src;
+  polish.round = 0;
+  polish.manual = 0;
+  polish.meta = collectMeta('');
+  polish.text = runPipeline(src, polish.meta, 0);
+  render();
+  toast('润色完成');
+}
+function rePolish() {
+  if (!polish.text) return;
+  if (!useQuota('polish')) { toast('辅助润色次数已用完，请到福利 - 积分商店兑换'); renderQ(); return; }
+  renderQ();
+  polish.round++;
+  var m = collectMeta(document.getElementById('pFix').value.trim());
+  polish.meta = m;
+  polish.text = runPipeline(polish.text, m, polish.round);
+  render();
+  toast('第 ' + polish.round + ' 版润色完成');
+}
+function editToggle(on) {
+  var wrap = document.getElementById('editWrap');
+  var ops = document.getElementById('pOps');
+  if (on) {
+    document.getElementById('pEdit').value = polish.text;
+    wrap.style.display = 'block';
+    ops.style.display = 'none';
+  } else {
+    wrap.style.display = 'none';
+    ops.style.display = 'flex';
+  }
+}
+function saveEdit() {
+  polish.text = document.getElementById('pEdit').value;
+  polish.manual++;
+  render();
+  toast('人工微调已保存（第 ' + polish.manual + ' 次）');
+}
+function render() {
+  var m = polish.meta;
+  document.getElementById('pOut').style.display = 'block';
+  document.getElementById('pTitle').textContent = '润色结果 · 第 ' + polish.round + ' 版' + (polish.manual ? ' · 人工 ' + polish.manual + ' 次' : '');
+  var chips = [m.dir + ' · ' + m.str, m.type + ' · ' + m.use,
+    '原文 ' + polish.src.length + ' 字 → 现 ' + polish.text.length + ' 字 · 调整 ' + polish.hits + ' 处'];
+  if (m.keeps.length) chips.push('保留词：' + m.keeps.join('、'));
+  if (m.doc) chips.push('风格文档：' + m.doc);
+  if (m.fix) chips.push('润色意见：' + m.fix);
+  document.getElementById('pMeta').innerHTML = chips.map(function (x, i) {
+    return '<span' + (i === 0 ? ' class="hl"' : '') + '>' + x + '</span>';
+  }).join('');
+  document.getElementById('pSrcOut').textContent = polish.src;
+  document.getElementById('pDirOut').textContent = m.dir + (polish.round > 1 ? ' · 第' + polish.round + '版' : '');
+  document.getElementById('pDstOut').textContent = polish.text;
+  editToggle(false);
+}
+function copyDst() {
+  if (!polish.text) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(polish.text).then(function () { toast('润色结果已复制'); }, function () { toast('复制失败，请手动选择'); });
+  } else { toast('当前环境不支持一键复制'); }
+}
+function dlDst() {
+  if (!polish.text) { toast('请先润色'); return; }
+  var m = polish.meta;
+  var head = '润色方向：' + m.dir + '　强度：' + m.str + '　文体：' + m.type + '　用途：' + m.use + '\n' +
+    (m.doc ? '风格文档：' + m.doc + '\n' : '') + '\n【原文】\n' + polish.src + '\n\n【润色后】\n';
+  var blob = new Blob([head + polish.text], { type: 'text/plain;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '润色稿_' + m.dir + '_第' + polish.round + '版.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  toast('润色稿已下载为 txt');
+}
+
+/* ---------- 剩余次数提示（福利 - 积分商店兑换） ---------- */
+function renderQ() {
+  document.getElementById('qTip').textContent = '剩余辅助润色次数：' + (getQuota().polish || 0) + ' · 润色与再润色各消耗 1 次，可在福利 - 积分商店兑换';
+}
+renderQ();
+</script>
+</body>
+</html>

@@ -1,0 +1,2273 @@
+\```text
+
+你现在是一名资深 Flutter + Spring Boot 全栈工程师，请基于当前已有项目，为我规划并实现「App 登录 / 注册 / 身份认证」模块。
+
+
+
+====================
+
+一、项目技术栈
+
+====================
+
+
+
+移动 App：
+
+\- Flutter 3.19.6
+
+\- Dart 3.3.4
+
+\- Android App 客户端
+
+
+
+Web 管理端 / H5：
+
+\- Vue 3.4.x
+
+\- Vite
+
+\- 当前任务原则上不开发 Vue 页面，除非后续登录模块确实需要后台管理功能
+
+
+
+后端：
+
+\- Spring Boot 2.7.18
+
+\- OpenJDK 17 LTS
+
+\- Maven 3.8.8
+
+
+
+数据库：
+
+\- MySQL 8.0.36
+
+\- mysql-connector-java 8.0.33
+
+
+
+要求：
+
+1. 优先沿用现有项目目录结构、命名规范、状态管理方案、网络框架和数据库规范。
+2. 在写代码之前先扫描项目，不要随意重构已有架构。
+3. 不要为了登录模块引入重量级的新技术栈。
+4. 如果现有项目已经存在统一 Result、异常处理、JWT、Spring Security、HTTP Client、Router、Storage 等组件，必须优先复用。
+5. 如果某项基础设施不存在，再给出最小改造方案。
+6. 所有代码必须兼容上述指定版本。
+
+
+
+====================
+
+二、产品目标
+
+====================
+
+
+
+开发 App 端完整的：
+
+
+
+\- 手机验证码登录
+
+\- 手机验证码注册
+
+\- 手机号 + 密码登录
+
+\- 新用户注册
+
+\- 设置 / 修改登录密码
+
+\- Access Token 身份认证
+
+\- Refresh Token 刷新
+
+\- 退出登录
+
+\- 获取当前用户信息
+
+\- 用户协议 / 隐私政策确认
+
+\- 微信登录入口预留
+
+\- QQ 登录入口预留
+
+
+
+第一阶段微信、QQ可以只完成 UI 和接口抽象，不要求真正接入微信开放平台、QQ互联。
+
+
+
+短信同样需要做 Provider 接口抽象。
+
+
+
+开发环境可以实现 MockSmsProvider，将验证码输出到后端日志；
+
+生产环境不得返回验证码给客户端。
+
+
+
+====================
+
+三、UI参考
+
+====================
+
+
+
+登录首页参考「虎扑 App 登录页面」的信息架构和交互布局，但不要复制虎扑品牌资源。
+
+
+
+整体风格：
+
+
+
+\- 白色背景
+
+\- 简洁
+
+\- 大面积留白
+
+\- 红色作为主要操作色
+
+\- 蓝色作为文字链接 / 获取验证码颜色
+
+\- 输入区域以底部分割线为主
+
+\- 页面层级清晰
+
+\- 适配 Android SafeArea
+
+\- 兼容常见屏幕尺寸
+
+
+
+页面从上到下：
+
+
+
+1. 左上角返回按钮
+
+
+
+2. App Logo
+
+   使用项目自己的 Logo，没有 Logo 时先使用可替换占位组件
+
+
+
+3. 主标题：
+
+   「登录后体验完整功能」
+
+
+
+4. 手机号输入区域：
+
+   +86
+
+   手机号输入框
+
+   placeholder：
+
+   「请输入手机号」
+
+
+
+5. 验证码区域：
+
+   左侧：
+
+   「验证码」
+
+   中间：
+
+   「请输入验证码」
+
+   右侧：
+
+   「获取验证码」
+
+
+
+6. 获取验证码后进入倒计时，例如：
+
+   「59s」
+
+   「58s」
+
+   ...
+
+   倒计时期间不可重复请求
+
+
+
+7. 用户协议勾选区域：
+
+   ○ 我已阅读并同意《用户协议》和《隐私政策》
+
+
+
+   用户协议和隐私政策文字可点击。
+
+
+
+8. 主按钮：
+
+   「登录」
+
+
+
+   红色实心按钮。
+
+
+
+9. 次按钮：
+
+   「账号密码登录」
+
+
+
+   白色背景 + 浅灰边框。
+
+
+
+10. 页面底部：
+
+   「其他方式登录」
+
+
+
+   微信图标
+
+   QQ图标
+
+
+
+微信、QQ先实现点击入口和统一 OAuth 接口预留。
+
+
+
+不要直接复制参考 App 的：
+
+\- Logo
+
+\- 商标
+
+\- 图形资产
+
+\- 专属字体
+
+\- 品牌名称
+
+
+
+只参考布局和交互。
+
+
+
+====================
+
+四、登录注册业务设计
+
+====================
+
+
+
+支持两种注册模式，并以第一种作为默认实现：
+
+
+
+方案 A【默认】：
+
+验证码登录即注册。
+
+
+
+逻辑：
+
+
+
+用户输入手机号 → 获取验证码 → 输入验证码 → 点击登录。
+
+
+
+后端判断：
+
+
+
+如果手机号已经注册：
+
+​    正常登录。
+
+
+
+如果手机号没有注册：
+
+​    自动创建账号；
+
+​    保存用户协议确认记录；
+
+​    然后登录。
+
+
+
+首次创建用户时：
+
+\- 自动生成默认昵称，例如 用户_XXXXXX
+
+\- avatar 为空
+
+\- password 可以为空
+
+\- 后续可以进入「设置密码」
+
+
+
+这样用户无需单独填写复杂注册表单。
+
+
+
+同时提供传统注册入口：
+
+
+
+手机号
+
+→ 验证码
+
+→ 设置密码
+
+→ 确认密码
+
+→ 注册成功
+
+→ 自动登录
+
+
+
+====================
+
+五、Flutter页面规划
+
+====================
+
+
+
+至少设计：
+
+
+
+1.
+
+PhoneCodeLoginPage
+
+手机号验证码登录
+
+
+
+2.
+
+PasswordLoginPage
+
+手机号 + 密码登录
+
+
+
+3.
+
+RegisterPage
+
+手机号验证码注册
+
+
+
+4.
+
+SetPasswordPage
+
+首次设置密码
+
+
+
+5.
+
+AgreementPage
+
+用户协议
+
+
+
+6.
+
+PrivacyPolicyPage
+
+隐私政策
+
+
+
+建议把重复组件抽离，例如：
+
+
+
+AuthHeader
+
+PhoneInput
+
+VerifyCodeInput
+
+AgreementCheckbox
+
+PrimaryButton
+
+SocialLoginArea
+
+
+
+但必须首先观察当前 Flutter 项目的目录结构，
+
+不要强行按照你自己的 architecture 改造整个项目。
+
+
+
+建议模块边界类似：
+
+
+
+features/auth/
+
+
+
+​    pages/
+
+​    widgets/
+
+​    models/
+
+​    services/
+
+​    repositories/
+
+
+
+如果项目已经采用其他结构，则沿用现有结构。
+
+
+
+====================
+
+六、Flutter交互要求
+
+====================
+
+
+
+手机号：
+
+
+
+\- 中国大陆手机号默认 +86
+
+\- 只能输入数字
+
+\- 默认验证 11 位手机号格式
+
+\- 预留国家区号切换能力
+
+\- 输入不合法时给出友好提示
+
+
+
+验证码：
+
+
+
+\- 默认 6 位数字
+
+\- 获取验证码前校验手机号
+
+\- 60 秒倒计时
+
+\- 防重复点击
+
+\- 页面销毁后正确释放 Timer
+
+\- 网络异常后恢复按钮状态
+
+
+
+协议：
+
+
+
+未勾选协议时点击登录：
+
+不要直接提交接口。
+
+
+
+提示：
+
+「请先阅读并同意用户协议和隐私政策」
+
+
+
+也可以使用轻提示 + 抖动/高亮协议区域。
+
+
+
+密码：
+
+
+
+\- 支持显示 / 隐藏
+
+\- 推荐 8～32 位
+
+\- 至少包含字母和数字
+
+\- 前端校验
+
+\- 后端必须再次校验
+
+
+
+提交：
+
+
+
+\- 防止连续点击
+
+\- 显示 Loading
+
+\- 请求完成恢复状态
+
+\- 正确处理超时
+
+\- 正确处理服务端错误
+
+
+
+键盘：
+
+
+
+\- 点击页面空白收起键盘
+
+\- 避免软键盘遮挡输入框
+
+\- 设置正确 keyboardType / textInputAction
+
+
+
+====================
+
+七、Flutter状态设计
+
+====================
+
+
+
+先检查项目目前使用：
+
+
+
+Provider
+
+Riverpod
+
+Bloc
+
+GetX
+
+MobX
+
+ChangeNotifier
+
+或者其他方案。
+
+
+
+如果已有状态管理：
+
+必须复用。
+
+
+
+如果没有：
+
+登录模块优先采用简单、低侵入方案，
+
+不要为了一个登录模块引入大型状态框架。
+
+
+
+认证状态至少包含：
+
+
+
+initial
+
+loading
+
+success
+
+error
+
+
+
+全局需要维护：
+
+
+
+isLoggedIn
+
+currentUser
+
+accessToken 是否有效
+
+
+
+App 启动时：
+
+
+
+检查本地 Refresh Token
+
+→ 尝试刷新登录状态
+
+→ 成功进入主页面
+
+→ 失败清除认证状态
+
+
+
+====================
+
+八、Token本地存储
+
+====================
+
+
+
+敏感 Token 不允许简单明文写入普通配置文件。
+
+
+
+优先采用安全存储方案，例如：
+
+
+
+flutter_secure_storage
+
+
+
+如果项目当前禁止新增该依赖：
+
+
+
+先抽象：
+
+
+
+TokenStorage
+
+
+
+例如：
+
+
+
+saveAccessToken()
+
+saveRefreshToken()
+
+getAccessToken()
+
+getRefreshToken()
+
+clear()
+
+
+
+让具体安全存储实现可以后续替换。
+
+
+
+不要让业务层直接依赖 SharedPreferences。
+
+
+
+====================
+
+九、Flutter网络层
+
+====================
+
+
+
+先检查项目已有：
+
+
+
+Dio
+
+http
+
+自定义 ApiClient
+
+
+
+如果已有：
+
+直接复用。
+
+
+
+所有登录 API 必须经过统一 ApiClient。
+
+
+
+自动完成：
+
+
+
+Authorization: Bearer {accessToken}
+
+
+
+Access Token 失效时：
+
+
+
+401
+
+→ Refresh Token
+
+→ 获取新 Access Token
+
+→ 原请求最多自动重试一次
+
+
+
+必须防止：
+
+
+
+多个接口同时 401
+
+→ 同时发起大量 refresh 请求。
+
+
+
+需要设计 Refresh Token 请求锁 / 队列机制。
+
+
+
+如果 Refresh Token 同样失效：
+
+
+
+清除本地 Token
+
+→ 更新全局登录状态
+
+→ 跳转登录页面。
+
+
+
+====================
+
+十、Spring Boot后端模块
+
+====================
+
+
+
+优先检查项目已有结构。
+
+
+
+如果没有明确规范，可规划：
+
+
+
+controller
+
+service
+
+service.impl
+
+repository / mapper
+
+entity
+
+dto
+
+vo
+
+security
+
+exception
+
+config
+
+enums
+
+
+
+不要把数据库 Entity 直接返回给 Flutter。
+
+
+
+API使用：
+
+
+
+DTO → Service → Entity
+
+Entity → VO → Response
+
+
+
+====================
+
+十一、建议API
+
+====================
+
+
+
+统一前缀：
+
+
+
+/api/v1/auth
+
+
+
+1. 获取验证码
+
+
+
+POST
+
+/api/v1/auth/sms/send
+
+
+
+Request：
+
+
+
+{
+
+  "phone": "13800138000",
+
+  "scene": "LOGIN"
+
+}
+
+
+
+scene：
+
+
+
+LOGIN
+
+REGISTER
+
+SET_PASSWORD
+
+RESET_PASSWORD
+
+
+
+Response：
+
+
+
+{
+
+  "requestId": "...",
+
+  "cooldownSeconds": 60
+
+}
+
+
+
+严禁生产接口返回验证码。
+
+
+
+
+
+2. 手机验证码登录
+
+
+
+POST
+
+/api/v1/auth/sms/login
+
+
+
+Request：
+
+
+
+{
+
+  "phone": "13800138000",
+
+  "code": "123456",
+
+  "agreementVersion": "1.0",
+
+  "deviceId": "...",
+
+  "deviceName": "..."
+
+}
+
+
+
+未注册手机号默认自动注册。
+
+
+
+
+
+3. 账号密码登录
+
+
+
+POST
+
+/api/v1/auth/password/login
+
+
+
+Request：
+
+
+
+{
+
+  "phone": "13800138000",
+
+  "password": "xxxxxx",
+
+  "deviceId": "..."
+
+}
+
+
+
+
+
+4. 用户注册
+
+
+
+POST
+
+/api/v1/auth/register
+
+
+
+Request：
+
+
+
+{
+
+  "phone": "13800138000",
+
+  "code": "123456",
+
+  "password": "xxxxxx",
+
+  "agreementVersion": "1.0"
+
+}
+
+
+
+
+
+5. Token刷新
+
+
+
+POST
+
+/api/v1/auth/token/refresh
+
+
+
+Request：
+
+
+
+{
+
+  "refreshToken": "..."
+
+}
+
+
+
+
+
+6. 退出登录
+
+
+
+POST
+
+/api/v1/auth/logout
+
+
+
+
+
+7. 当前用户
+
+
+
+GET
+
+/api/v1/auth/me
+
+
+
+
+
+8. 设置密码
+
+
+
+POST
+
+/api/v1/auth/password/set
+
+
+
+
+
+9. 重置密码
+
+
+
+POST
+
+/api/v1/auth/password/reset
+
+
+
+
+
+为微信/QQ预留：
+
+
+
+POST
+
+/api/v1/auth/oauth/{provider}/login
+
+
+
+provider：
+
+
+
+wechat
+
+qq
+
+
+
+第一阶段可以返回 NOT_IMPLEMENTED，
+
+但代码结构必须可以扩展。
+
+
+
+====================
+
+十二、统一登录Response
+
+====================
+
+
+
+建议：
+
+
+
+{
+
+  "code": 0,
+
+  "message": "success",
+
+  "data": {
+
+​    "accessToken": "...",
+
+​    "refreshToken": "...",
+
+​    "tokenType": "Bearer",
+
+​    "expiresIn": 7200,
+
+​    "isNewUser": false,
+
+​    "user": {
+
+​      "id": 10001,
+
+​      "phone": "138****8000",
+
+​      "nickname": "用户123456",
+
+​      "avatar": null
+
+​    }
+
+  }
+
+}
+
+
+
+不要把：
+
+
+
+passwordHash
+
+完整手机号
+
+验证码
+
+Refresh Token数据库值
+
+内部安全字段
+
+
+
+暴露在 User VO 中。
+
+
+
+====================
+
+十三、JWT认证设计
+
+====================
+
+
+
+采用：
+
+
+
+Access Token + Refresh Token
+
+
+
+Access Token：
+
+建议有效期约 2 小时。
+
+
+
+Refresh Token：
+
+建议有效期约 30 天。
+
+
+
+Access Token：
+
+
+
+JWT形式。
+
+
+
+包含最少字段：
+
+
+
+sub / userId
+
+iat
+
+exp
+
+tokenType
+
+
+
+避免把手机号、密码、隐私字段大量写入 JWT。
+
+
+
+JWT Secret：
+
+
+
+不得写死在 Git 仓库。
+
+
+
+从：
+
+
+
+application.yml 环境变量
+
+或服务器环境变量
+
+
+
+读取。
+
+
+
+例如：
+
+
+
+JWT_SECRET
+
+
+
+Refresh Token：
+
+
+
+建议使用不可预测的随机 Token。
+
+
+
+数据库只保存：
+
+
+
+tokenHash
+
+
+
+不要直接保存 Refresh Token 明文。
+
+
+
+退出登录时将 Refresh Token 撤销。
+
+
+
+====================
+
+十四、Spring Security
+
+====================
+
+
+
+如果项目当前已经使用 Spring Security：
+
+
+
+直接接入。
+
+
+
+如果没有：
+
+
+
+基于 Spring Security 5.x / Spring Boot 2.7.18 实现。
+
+
+
+公开接口：
+
+
+
+/api/v1/auth/**
+
+
+
+其中需要合理区分无需登录接口。
+
+
+
+其他业务接口：
+
+
+
+必须经过 Bearer Token 鉴权。
+
+
+
+不要使用已经废弃的 WebSecurityConfigurerAdapter 写法，
+
+优先 SecurityFilterChain。
+
+
+
+====================
+
+十五、密码安全
+
+====================
+
+
+
+密码绝不能：
+
+
+
+明文保存
+
+MD5保存
+
+SHA1直接保存
+
+
+
+使用：
+
+
+
+BCryptPasswordEncoder
+
+
+
+数据库只保存：
+
+
+
+password_hash
+
+
+
+登录：
+
+
+
+BCrypt matches
+
+
+
+修改密码：
+
+
+
+重新 BCrypt。
+
+
+
+不得通过日志输出：
+
+
+
+密码
+
+Token
+
+验证码。
+
+
+
+====================
+
+十六、短信验证码安全
+
+====================
+
+
+
+当前技术栈没有 Redis，因此第一阶段不要强行增加 Redis。
+
+
+
+可以基于 MySQL 实现短信验证码记录和限流。
+
+
+
+必须支持：
+
+
+
+\- 60 秒内不能重复发送
+
+\- 验证码有效时间，例如 5 分钟
+
+\- 验证成功立即失效
+
+\- 限制验证码错误次数
+
+\- 限制单手机号发送频率
+
+\- 限制单 IP 请求频率
+
+\- 防止验证码重复使用
+
+\- 验证码数据库中不要长期明文保存
+
+
+
+建议保存 hash。
+
+
+
+生产环境短信发送抽象：
+
+
+
+SmsProvider
+
+
+
+例如：
+
+
+
+SmsProvider
+
+​    sendCode(phone, code)
+
+
+
+实现：
+
+
+
+MockSmsProvider
+
+AliyunSmsProvider（未来）
+
+TencentSmsProvider（未来）
+
+
+
+开发环境：
+
+
+
+MockSmsProvider
+
+只把验证码打印到开发日志。
+
+
+
+生产环境绝对不能返回验证码给 App。
+
+
+
+====================
+
+十七、数据库设计
+
+====================
+
+
+
+至少规划以下表：
+
+
+
+1.
+
+user
+
+
+
+建议字段：
+
+
+
+id BIGINT
+
+phone VARCHAR
+
+password_hash VARCHAR
+
+nickname VARCHAR
+
+avatar_url VARCHAR
+
+status TINYINT
+
+last_login_at DATETIME
+
+created_at DATETIME
+
+updated_at DATETIME
+
+
+
+phone UNIQUE。
+
+
+
+
+
+2.
+
+sms_verification_code
+
+
+
+字段考虑：
+
+
+
+id
+
+phone
+
+scene
+
+code_hash
+
+expires_at
+
+used_at
+
+failed_attempts
+
+request_ip
+
+created_at
+
+
+
+
+
+3.
+
+user_refresh_token
+
+
+
+字段考虑：
+
+
+
+id
+
+user_id
+
+token_hash
+
+device_id
+
+device_name
+
+expires_at
+
+revoked_at
+
+created_at
+
+
+
+
+
+4.
+
+user_oauth_account
+
+
+
+字段：
+
+
+
+id
+
+user_id
+
+provider
+
+open_id
+
+union_id
+
+created_at
+
+
+
+为微信 / QQ预留。
+
+
+
+
+
+5.
+
+user_consent_log
+
+
+
+用于保存用户协议确认记录：
+
+
+
+id
+
+user_id
+
+agreement_type
+
+agreement_version
+
+accepted_at
+
+ip
+
+device_id
+
+
+
+agreement_type：
+
+
+
+USER_AGREEMENT
+
+PRIVACY_POLICY
+
+
+
+请合理设置：
+
+
+
+PRIMARY KEY
+
+UNIQUE
+
+INDEX
+
+
+
+并解释每个索引的作用。
+
+
+
+====================
+
+十八、异常与错误码
+
+====================
+
+
+
+建立清晰业务错误码，例如：
+
+
+
+AUTH_PHONE_INVALID
+
+AUTH_SMS_TOO_FREQUENT
+
+AUTH_SMS_CODE_INVALID
+
+AUTH_SMS_CODE_EXPIRED
+
+AUTH_PASSWORD_INVALID
+
+AUTH_ACCOUNT_DISABLED
+
+AUTH_TOKEN_EXPIRED
+
+AUTH_REFRESH_TOKEN_INVALID
+
+AUTH_AGREEMENT_REQUIRED
+
+
+
+Flutter不要直接展示后端Java异常信息。
+
+
+
+后端统一转换为：
+
+
+
+{
+
+  "code": xxxx,
+
+  "message": "...",
+
+  "data": null
+
+}
+
+
+
+开发环境可以记录 StackTrace，
+
+客户端不得看到 StackTrace。
+
+
+
+====================
+
+十九、注册并发问题
+
+====================
+
+
+
+必须考虑：
+
+
+
+同一手机号并发验证码登录。
+
+
+
+数据库：
+
+
+
+phone UNIQUE。
+
+
+
+业务层：
+
+
+
+先查询
+
+→ 创建用户
+
+
+
+仍然必须捕获唯一键冲突，
+
+避免并发情况下创建两个账号。
+
+
+
+最终只能存在：
+
+
+
+1 个手机号
+
+对应
+
+1 个账号。
+
+
+
+====================
+
+二十、协议处理
+
+====================
+
+
+
+前端：
+
+
+
+必须勾选协议才能登录 / 注册。
+
+
+
+后端：
+
+
+
+新用户注册时必须接收 agreementVersion。
+
+
+
+注册成功后保存：
+
+
+
+用户协议版本
+
+隐私政策版本
+
+接受时间
+
+用户
+
+设备
+
+IP
+
+
+
+不要只依赖前端 checkbox。
+
+
+
+====================
+
+二十一、日志规范
+
+====================
+
+
+
+允许记录：
+
+
+
+userId
+
+接口
+
+结果
+
+requestId
+
+
+
+禁止记录：
+
+
+
+完整手机号
+
+密码
+
+验证码
+
+Access Token
+
+Refresh Token
+
+
+
+手机号日志需要脱敏：
+
+
+
+138****8000
+
+
+
+====================
+
+二十二、代码质量要求
+
+====================
+
+
+
+要求：
+
+
+
+\- 不写超大 Controller
+
+\- Controller 不直接处理复杂业务
+
+\- Service负责业务
+
+\- 数据访问职责独立
+
+\- DTO / VO分离
+
+\- 避免重复代码
+
+\- 使用枚举而不是大量魔法字符串
+
+\- public方法补必要注释
+
+\- 核心认证代码说明安全考虑
+
+\- 所有参数做后端校验
+
+\- Flutter Model正确处理 null
+
+\- 网络异常不能导致 App 崩溃
+
+\- 页面销毁后不能继续 setState
+
+\- Timer / Controller 正确 dispose
+
+\- 避免 BuildContext 异步使用问题
+
+
+
+====================
+
+二十三、测试
+
+====================
+
+
+
+后端至少覆盖：
+
+
+
+1. 正常发送验证码
+2. 60秒重复发送
+3. 错误验证码
+4. 过期验证码
+5. 已使用验证码
+6. 新手机号自动注册
+7. 老手机号正常登录
+8. 密码错误
+9. Token正常鉴权
+10. Access Token过期
+11. Refresh Token成功
+12. Refresh Token过期
+13. Logout后Refresh Token不可使用
+14. 禁用用户登录
+15. 同手机号并发注册
+
+
+
+Flutter至少验证：
+
+
+
+1. 手机号输入校验
+2. 获取验证码状态
+3. 倒计时
+4. 未勾选协议
+5. 验证码登录
+6. 密码登录
+7. Loading状态
+8. API错误展示
+9. Token持久化
+10. Token过期刷新
+11. Refresh失败跳转登录
+12. 页面返回
+13. 键盘适配
+
+
+
+====================
+
+二十四、第一阶段不要做的事情
+
+====================
+
+
+
+第一阶段不要过度设计：
+
+
+
+\- 不要引入微服务
+
+\- 不要引入 MQ
+
+\- 不要强制 Redis
+
+\- 不要引入 OAuth Server
+
+\- 不要开发复杂风控平台
+
+\- 不要开发完整微信 / QQ开放平台登录
+
+\- 不要因为登录模块重构整个项目
+
+\- 不要修改与登录无关的大量代码
+
+
+
+优先把：
+
+
+
+Flutter UI
+
+短信登录
+
+密码登录
+
+自动注册
+
+JWT
+
+Refresh Token
+
+Logout
+
+用户信息
+
+
+
+完整跑通。
+
+
+
+====================
+
+二十五、你的执行方式
+
+====================
+
+
+
+现在先不要马上大量写代码。
+
+
+
+第一步：
+
+扫描当前 Flutter 和 Spring Boot 项目。
+
+
+
+输出：
+
+
+
+1. 当前项目目录结构分析
+2. 已有依赖分析
+3. 已有网络层
+4. 已有数据库层
+5. 已有统一返回结构
+6. 已有异常处理
+7. 已有认证相关代码
+8. 可以直接复用的组件
+9. 缺失组件
+10. 与本方案存在冲突的地方
+
+
+
+然后输出：
+
+
+
+《登录注册模块编码实施计划》
+
+
+
+实施计划必须按照阶段拆解，例如：
+
+
+
+Phase 1
+
+数据库 + Entity + Repository
+
+
+
+Phase 2
+
+验证码模块
+
+
+
+Phase 3
+
+JWT / Refresh Token
+
+
+
+Phase 4
+
+后端认证 API
+
+
+
+Phase 5
+
+Flutter 登录 UI
+
+
+
+Phase 6
+
+Flutter API + Token管理
+
+
+
+Phase 7
+
+前后端联调
+
+
+
+Phase 8
+
+测试和安全检查
+
+
+
+每个阶段必须说明：
+
+
+
+\- 修改哪些文件
+
+\- 新增哪些文件
+
+\- 每个文件职责
+
+\- API
+
+\- 数据库变化
+
+\- 风险
+
+\- 验收条件
+
+
+
+等我确认编码计划后，再开始修改代码。
+
+
+
+====================
+
+二十六、最终验收目标
+
+====================
+
+
+
+必须最终形成如下完整流程：
+
+
+
+App启动
+
+​    ↓
+
+检查Token
+
+​    ↓
+
+未登录
+
+​    ↓
+
+登录页面
+
+​    ↓
+
+手机号 + 验证码
+
+​    ↓
+
+勾选用户协议
+
+​    ↓
+
+发送验证码
+
+​    ↓
+
+验证验证码
+
+​    ↓
+
+后端判断用户
+
+​    ↓
+
+不存在 → 自动注册
+
+已存在 → 登录
+
+​    ↓
+
+生成 Access Token
+
++
+
+Refresh Token
+
+​    ↓
+
+App安全保存Token
+
+​    ↓
+
+进入首页
+
+​    ↓
+
+调用业务API自动携带Token
+
+​    ↓
+
+Access Token过期
+
+​    ↓
+
+自动Refresh
+
+​    ↓
+
+继续原请求
+
+
+
+Refresh Token失效：
+
+​    ↓
+
+清空本地认证信息
+
+​    ↓
+
+重新进入登录页
+
+
+
+退出登录：
+
+​    ↓
+
+服务端撤销Refresh Token
+
+​    ↓
+
+App删除本地Token
+
+​    ↓
+
+进入登录页面
+
+
+
+请优先保证：
+
+「安全、可维护、版本兼容、能实际运行」，
+
+不要只生成演示性质的代码。
+
+\```
+
+
+
+这套提示词比较适合你目前这个阶段，因为它会强制编码模型**先检查现有项目，再给出文件级改造计划，而不是直接胡乱生成一套新架构**。
+
+
+
+另外，你这个登录模块我建议产品上采用截图这种模式：**“手机号 + 验证码登录，未注册手机号自动注册”作为主流程，“账号密码登录”作为次入口**。这样 Flutter 端页面更接近你给的参考图，同时后端仍然保留完整的注册、密码、Refresh Token 和第三方登录扩展能力。

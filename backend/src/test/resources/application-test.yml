@@ -1,0 +1,33 @@
+# 单元测试配置：使用 H2 内存库（MySQL 兼容模式），无需外部数据库即可运行 mvn test。
+# NON_KEYWORDS=USER：表名 user 在 H2 中是关键字，需显式放行（MySQL 中可正常使用）。
+spring:
+  datasource:
+    url: jdbc:h2:mem:authtest;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE;NON_KEYWORDS=USER,VALUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+auth:
+  jwt:
+    secret: test-only-secret-0123456789-0123456789-0123456789
+    issuer: script-platform-test
+    access-token-ttl: 2h
+    refresh-token-ttl: 30d
+  sms:
+    # 测试专用通道：把验证码留在内存里供断言使用，不打印日志
+    provider: test-capture
+    code-length: 6
+    code-ttl: 5m
+    send-cooldown: 60s
+    max-verify-attempts: 5
+    phone-daily-limit: 10
+    ip-hourly-limit: 30
+  agreement:
+    user-agreement-version: "1.0"
+    privacy-policy-version: "1.0"

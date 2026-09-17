@@ -1,0 +1,61 @@
+# --- OS / Editor ---
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+
+# --- Logs & local dumps ---
+*.log
+*_sdk_dl.log
+devices.log
+flutter_*.log
+server_*.log
+
+# --- Secrets / local env ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+!server/src/**
+
+# --- Flutter / Dart ---
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/.packages
+app/build/
+app/.pub-cache/
+app/.pub/
+app/**/doc/api/
+app/android/.gradle/
+app/android/local.properties
+app/android/app/debug/
+app/android/app/profile/
+app/android/app/release/
+app/ios/Pods/
+app/ios/.symlinks/
+app/linux/flutter/ephemeral/
+app/macos/Flutter/ephemeral/
+app/windows/flutter/ephemeral/
+
+# --- Java / Maven ---
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+!backend/mvnw
+!backend/mvnw.cmd
+
+# --- IDE ---
+.idea/
+*.iml
+.vscode/
+*.ipr
+*.iws
+
+# --- Node (若后续接入）---
+node_modules/
+dist/
+.cache/

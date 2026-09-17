@@ -1,0 +1,54 @@
+00:00 +0: loading D:/app(2)/app/test/api_client_test.dart
+00:00 +0: D:/app(2)/app/test/api_client_test.dart: 请求自动携带 Bearer Token
+00:00 +1: D:/app(2)/app/test/api_client_test.dart: 401 时自动刷新并重试原请求（Access Token 过期 → 刷新 → 继续原请求）
+00:00 +2: D:/app(2)/app/test/api_client_test.dart: 多个请求同时 401 时只发起一次刷新（防止刷新风暴）
+00:00 +3: D:/app(2)/app/test/api_client_test.dart: 刷新失败时清空凭证并回调登录失效（跳转登录页）
+00:00 +4: D:/app(2)/app/test/api_client_test.dart: 网络异常转换为安全文案，不抛出原始异常
+00:00 +5: D:/app(2)/app/test/api_client_test.dart: 业务错误码原样透传给调用方
+00:00 +6: D:/app(2)/app/test/auth_state_test.dart: 启动时无本地凭证：直接进入未登录态
+00:00 +7: D:/app(2)/app/test/auth_state_test.dart: 启动时有有效凭证：自动恢复登录态
+00:00 +8: D:/app(2)/app/test/auth_state_test.dart: 启动时 Refresh Token 已失效：清空凭证并回到未登录态
+00:00 +9: D:/app(2)/app/test/auth_state_test.dart: 启动时网络异常：保留凭证，不把用户登出
+00:00 +10: D:/app(2)/app/test/auth_state_test.dart: 验证码登录成功后持久化令牌并更新当前用户
+00:00 +11: D:/app(2)/app/test/auth_state_test.dart: 登录失败时保留后端错误文案且不写入令牌
+00:00 +12: D:/app(2)/app/test/auth_state_test.dart: 设置密码场景发送验证码：不带手机号并携带 Token（服务端按 Token 解析号码）
+00:00 +13: D:/app(2)/app/test/auth_state_test.dart: 退出登录：服务端撤销 Refresh Token 并清空本地凭证
+00:00 +14: D:/app(2)/app/test/auth_state_test.dart: 登录态失效：清空本地凭证并回到未登录态
+00:00 +15: D:/app(2)/app/test/live_server_test.dart: (setUpAll)
+00:00 +15: D:/app(2)/app/test/live_server_test.dart: 真实联调：验证码登录 → 鉴权 → 自动刷新 → 退出全流程
+00:01 +16: D:/app(2)/app/test/login_page_test.dart: 未勾选协议点击登录：只提示，不提交接口
+00:01 +17: D:/app(2)/app/test/login_page_test.dart: 未勾选协议点击登录：只提示，不提交接口
+00:01 +18: D:/app(2)/app/test/login_page_test.dart: 未勾选协议点击登录：只提示，不提交接口
+00:01 +19: D:/app(2)/app/test/login_page_test.dart: 未勾选协议点击登录：只提示，不提交接口
+00:01 +20: D:/app(2)/app/test/login_page_test.dart: 未勾选协议点击登录：只提示，不提交接口
+00:01 +21: D:/app(2)/app/test/login_page_test.dart: 未勾选协议点击登录：只提示，不提交接口
+00:01 +22: D:/app(2)/app/test/login_page_test.dart: 未勾选协议点击登录：只提示，不提交接口
+00:01 +23: D:/app(2)/app/test/login_page_test.dart: 未勾选协议点击登录：只提示，不提交接口
+00:01 +24: D:/app(2)/app/test/login_page_test.dart: 未勾选协议点击登录：只提示，不提交接口
+00:01 +25: D:/app(2)/app/test/login_page_test.dart: 未勾选协议点击登录：只提示，不提交接口
+00:01 +26: D:/app(2)/app/test/login_page_test.dart: 未勾选协议点击登录：只提示，不提交接口
+00:01 +27: D:/app(2)/app/test/login_page_test.dart: 未勾选协议点击登录：只提示，不提交接口
+00:01 +28: D:/app(2)/app/test/register_page_test.dart: 登录页右上角有注册入口，点击可进入注册页
+00:01 +29: D:/app(2)/app/test/register_page_test.dart: 登录页右上角有注册入口，点击可进入注册页
+00:01 +30: D:/app(2)/app/test/register_page_test.dart: 登录页右上角有注册入口，点击可进入注册页
+00:01 +31: D:/app(2)/app/test/verify_code_input_test.dart: 发送成功后进入倒计时：60s → 59s，期间不可重复点击
+00:01 +32: D:/app(2)/app/test/verify_code_input_test.dart: 发送成功后进入倒计时：60s → 59s，期间不可重复点击
+00:02 +33: D:/app(2)/app/test/verify_code_input_test.dart: 发送成功后进入倒计时：60s → 59s，期间不可重复点击
+00:02 +34: D:/app(2)/app/test/verify_code_input_test.dart: 发送成功后进入倒计时：60s → 59s，期间不可重复点击
+00:02 +35: D:/app(2)/app/test/verify_code_input_test.dart: 发送成功后进入倒计时：60s → 59s，期间不可重复点击
+00:02 +36: D:/app(2)/app/test/widget_test.dart: 本地无凭证时启动：进入登录页
+00:02 +37: D:/app(2)/app/test/widget_test.dart: 本地无凭证时启动：进入登录页
+00:02 +38: D:/app(2)/app/test/widget_test.dart: 本地无凭证时启动：进入登录页
+00:02 +39: D:/app(2)/app/test/widget_test.dart: 本地无凭证时启动：进入登录页
+00:02 +40: D:/app(2)/app/test/widget_test.dart: 本地无凭证时启动：进入登录页
+00:02 +41: D:/app(2)/app/test/widget_test.dart: 本地无凭证时启动：进入登录页
+00:02 +42: D:/app(2)/app/test/widget_test.dart: 本地无凭证时启动：进入登录页
+00:02 +43: D:/app(2)/app/test/widget_test.dart: 本地无凭证时启动：进入登录页
+00:02 +44: D:/app(2)/app/test/verify_code_input_test.dart: 倒计时结束后可以重新获取
+00:02 +45: D:/app(2)/app/test/register_page_test.dart: 注册成功：提交 /register 并自动登录
+00:02 +46: D:/app(2)/app/test/widget_test.dart: 本地有有效凭证时启动：直接进入首页
+00:02 +47: D:/app(2)/app/test/widget_test.dart: 登录页 → 注册页可正常进入（回归：AuthScope 必须在 Navigator 之上）
+00:02 +48: D:/app(2)/app/test/widget_test.dart: 登录页 → 注册页可正常进入（回归：AuthScope 必须在 Navigator 之上）
+00:03 +49: D:/app(2)/app/test/register_page_test.dart: 获取验证码：REGISTER 场景且先校验手机号
+00:03 +50: D:/app(2)/app/test/register_page_test.dart: 获取验证码：REGISTER 场景且先校验手机号
+00:03 +51: All tests passed!
